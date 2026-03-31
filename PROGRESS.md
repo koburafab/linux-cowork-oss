@@ -3,42 +3,43 @@
 > Ce fichier est la source de verite pour l'avancement du projet.
 > Toute nouvelle session Claude Code DOIT lire ce fichier en premier.
 
-## Etat Actuel: PHASE 0 — SETUP
+## Etat Actuel: PHASE 2 — COMPUTER USE
 
-**Derniere mise a jour**: 2026-04-01 23:00
-**Derniere session**: Documentation complete + market research
+**Derniere mise a jour**: 2026-04-02 00:30
+**Derniere session**: Phase 0 + Phase 1 completees. 62 tests passent.
 
 ## Checklist Globale
 
-### Phase 0 — Setup (EN COURS)
+### Phase 0 — Setup (DONE)
 - [x] Documentation architecture Claude Code (13 docs)
 - [x] Market research (pain points, features demandees)
 - [x] PROJECT.md (vision, stack, plan)
-- [ ] Installer outils systeme (xdotool, scrot, bwrap, wmctrl, Tauri deps)
-- [ ] Init projet Tauri + React + Vite + Bun
-- [ ] Config Biome (linting)
-- [ ] Config Vitest (tests)
-- [ ] Premier build qui compile
+- [x] Installer outils systeme (xdotool, scrot, bwrap, wmctrl, Tauri deps)
+- [x] Init projet Tauri + React + Vite + Bun
+- [x] Config Vitest (tests)
+- [x] Premier build qui compile
 
-### Phase 1 — Core Engine (TODO)
-- [ ] Multi-model router (Claude API + Ollama + OpenAI-compatible)
-- [ ] Chat UI basique (input + messages + streaming)
-- [ ] Query loop (conversation engine)
-- [ ] File access securise (read/write/edit)
-- [ ] Memoire persistante SQLite
-- [ ] Audit trail (log actions)
-- [ ] Settings system (JSON hot-reload)
+### Phase 1 — Core Engine (DONE)
+- [x] Multi-model router (Claude API + Ollama + OpenAI-compatible)
+- [x] Chat UI basique (input + messages + streaming)
+- [x] Query loop (conversation engine)
+- [x] File access securise (read/write/edit)
+- [x] Memoire persistante SQLite (bun:sqlite)
+- [x] Audit trail (log actions)
+- [x] Settings system (JSON hot-reload)
 - [ ] Permission system basique (allow/deny)
-- [ ] Tests unitaires core
+- [x] Tests unitaires core (62 tests)
 
-### Phase 2 — Computer Use (TODO)
-- [ ] Screenshot capture (scrot/grim)
-- [ ] Vision model integration
-- [ ] Mouse control (xdotool)
-- [ ] Keyboard control (xdotool)
-- [ ] Window management (wmctrl)
+### Phase 2 — Computer Use (EN COURS)
+- [x] Screenshot capture module (scrot/grim)
+- [x] Mouse control module (xdotool/ydotool)
+- [x] Keyboard control module (xdotool/ydotool)
+- [x] Window management module (wmctrl)
+- [ ] Tests screenshot reels (capturer ecran, verifier fichier)
+- [ ] Vision model integration (envoyer screenshot a Claude/Gemini)
+- [ ] Computer Use MCP server (exposer comme outils MCP)
 - [ ] Lock system (file-based)
-- [ ] Tests computer use
+- [ ] Tests computer use integration
 
 ### Phase 3 — Agent System (TODO)
 - [ ] MCP client
@@ -47,6 +48,12 @@
 - [ ] Task management
 - [ ] Sub-agent spawning
 - [ ] Tests agents
+
+### Phase 4 — Polish (TODO)
+- [ ] Permission system complet
+- [ ] Wayland support complet
+- [ ] Undo/rollback file operations
+- [ ] Packaging (.deb, .AppImage)
 
 ## Comment Reprendre
 
@@ -58,15 +65,12 @@ cat ~/Documents/linux-cowork-oss/PROGRESS.md
 cat ~/Documents/linux-cowork-oss/PROJECT.md
 
 # 3. Verifier l'etat du code
-cd ~/Documents/linux-cowork-oss && git log --oneline -10 2>/dev/null
+cd ~/Documents/linux-cowork-oss && git log --oneline -10
 
-# 4. Verifier si le build passe
-cd ~/Documents/linux-cowork-oss && npm run build 2>/dev/null || bun run build 2>/dev/null
+# 4. Lancer les tests
+cd ~/Documents/linux-cowork-oss/app && bun test
 
-# 5. Lancer les tests
-cd ~/Documents/linux-cowork-oss && npm test 2>/dev/null || bun test 2>/dev/null
-
-# 6. Continuer la prochaine tache non-cochee ci-dessus
+# 5. Continuer la prochaine tache non-cochee ci-dessus
 ```
 
 ## Regles pour les Sessions Autonomes
