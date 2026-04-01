@@ -13,12 +13,25 @@ interface AuditEntry {
   model?: string
 }
 
+export interface AgentAction {
+  id: string
+  type: 'tool_call' | 'tool_result' | 'screenshot'
+  name?: string
+  input?: Record<string, unknown>
+  result?: string
+  timestamp: number
+}
+
 interface ChatState {
   messages: ChatMessage[]
   activeModel: ModelConfig
   availableModels: ModelConfig[]
   isStreaming: boolean
   auditLog: AuditEntry[]
+  agentActions: AgentAction[]
+  currentScreenshot: string | null
+  isAutonomous: boolean
+  backendReady: boolean
 
   // Actions
   addMessage: (msg: ChatMessage) => void
@@ -26,6 +39,11 @@ interface ChatState {
   setActiveModel: (model: ModelConfig) => void
   setStreaming: (streaming: boolean) => void
   addAuditEntry: (action: string, details: string) => void
+  addAgentAction: (action: AgentAction) => void
+  setCurrentScreenshot: (base64: string | null) => void
+  setAutonomous: (active: boolean) => void
+  setBackendReady: (ready: boolean) => void
+  clearAgentActions: () => void
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -34,6 +52,10 @@ export const useChatStore = create<ChatState>((set) => ({
   availableModels: DEFAULT_MODELS,
   isStreaming: false,
   auditLog: [],
+  agentActions: [],
+  currentScreenshot: null,
+  isAutonomous: false,
+  backendReady: false,
 
   addMessage: (msg) =>
     set((state) => ({
@@ -58,4 +80,17 @@ export const useChatStore = create<ChatState>((set) => ({
         },
       ],
     })),
+
+  addAgentAction: (action) =>
+    set((state) => ({
+      agentActions: [...state.agentActions, action],
+    })),
+
+  setCurrentScreenshot: (base64) => set({ currentScreenshot: base64 }),
+
+  setAutonomous: (active) => set({ isAutonomous: active }),
+
+  setBackendReady: (ready) => set({ backendReady: ready }),
+
+  clearAgentActions: () => set({ agentActions: [], currentScreenshot: null }),
 }))

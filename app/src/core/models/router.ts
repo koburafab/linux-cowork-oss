@@ -4,7 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ModelConfig, ChatMessage, StreamChunk, ModelResponse } from './types'
+import type { ModelConfig, ChatMessage, StreamChunk, ModelResponse, ToolDefinition } from './types'
 
 export class ModelRouter {
   private anthropicClients: Map<string, Anthropic> = new Map()
@@ -12,10 +12,11 @@ export class ModelRouter {
   async chat(
     config: ModelConfig,
     messages: ChatMessage[],
+    tools?: ToolDefinition[],
   ): Promise<ModelResponse> {
     switch (config.provider) {
       case 'anthropic':
-        return this.chatAnthropic(config, messages)
+        return this.chatAnthropic(config, messages, tools)
       case 'ollama':
       case 'openai-compatible':
         return this.chatOpenAICompatible(config, messages)
@@ -27,10 +28,11 @@ export class ModelRouter {
   async *stream(
     config: ModelConfig,
     messages: ChatMessage[],
+    tools?: ToolDefinition[],
   ): AsyncGenerator<StreamChunk> {
     switch (config.provider) {
       case 'anthropic':
-        yield* this.streamAnthropic(config, messages)
+        yield* this.streamAnthropic(config, messages, tools)
         break
       case 'ollama':
       case 'openai-compatible':
@@ -57,17 +59,23 @@ export class ModelRouter {
   private async chatAnthropic(
     config: ModelConfig,
     messages: ChatMessage[],
+    tools?: ToolDefinition[],
   ): Promise<ModelResponse> {
     const client = this.getAnthropicClient(config)
     const { system, formatted } = this.formatForAnthropic(messages)
 
-    const response = await client.messages.create({
+    const createParams = {
       model: config.model,
       max_tokens: config.maxTokens || 4096,
       temperature: config.temperature,
       system: system || undefined,
       messages: formatted,
-    })
+      ...(tools && tools.length > 0
+        ? { tools: tools as Anthropic.Messages.Tool[] }
+        : {}),
+    }
+
+    const response = await client.messages.create(createParams)
 
     const text = response.content
       .filter((block): block is Anthropic.TextBlock => block.type === 'text')
@@ -88,24 +96,63 @@ export class ModelRouter {
   private async *streamAnthropic(
     config: ModelConfig,
     messages: ChatMessage[],
+    tools?: ToolDefinition[],
   ): AsyncGenerator<StreamChunk> {
     const client = this.getAnthropicClient(config)
     const { system, formatted } = this.formatForAnthropic(messages)
 
-    const stream = client.messages.stream({
+    const streamParams = {
       model: config.model,
       max_tokens: config.maxTokens || 4096,
       temperature: config.temperature,
       system: system || undefined,
       messages: formatted,
-    })
+      ...(tools && tools.length > 0
+        ? { tools: tools as Anthropic.Messages.Tool[] }
+        : {}),
+    }
+
+    const stream = client.messages.stream(streamParams)
+
+    let currentToolName = ''
+    let currentToolUseId = ''
+    let currentToolInputJson = ''
 
     for await (const event of stream) {
-      if (
+      if (event.type === 'content_block_start') {
+        const block = (event as unknown as { content_block: { type: string; name?: string; id?: string } }).content_block
+        if (block.type === 'tool_use') {
+          currentToolName = block.name || ''
+          currentToolUseId = block.id || ''
+          currentToolInputJson = ''
+        }
+      } else if (
         event.type === 'content_block_delta' &&
         event.delta.type === 'text_delta'
       ) {
         yield { type: 'text', content: event.delta.text }
+      } else if (
+        event.type === 'content_block_delta' &&
+        (event.delta as unknown as { type: string }).type === 'input_json_delta'
+      ) {
+        currentToolInputJson += (event.delta as unknown as { partial_json: string }).partial_json
+      } else if (event.type === 'content_block_stop' && currentToolName) {
+        let toolInput: Record<string, unknown> = {}
+        try {
+          toolInput = JSON.parse(currentToolInputJson || '{}')
+        } catch {
+          // malformed JSON
+        }
+        yield {
+          type: 'tool_use',
+          content: '',
+          toolName: currentToolName,
+          toolInput,
+          toolUseId: currentToolUseId,
+        }
+        currentToolName = ''
+        currentToolUseId = ''
+        currentToolInputJson = ''
       }
     }
 

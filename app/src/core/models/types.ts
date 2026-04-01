@@ -24,10 +24,26 @@ export interface ChatMessage {
 }
 
 export interface StreamChunk {
-  type: 'text' | 'tool_use' | 'error' | 'done'
+  type: 'text' | 'tool_use' | 'tool_result' | 'error' | 'done'
   content: string
   toolName?: string
   toolInput?: Record<string, unknown>
+  toolUseId?: string
+}
+
+export type ContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
+
+export interface ToolDefinition {
+  name: string
+  description: string
+  input_schema: Record<string, unknown>
+}
+
+export interface ToolResult {
+  tool_use_id: string
+  content: string | ContentBlock[]
 }
 
 export interface ModelResponse {
