@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { streamChat, waitForBackend } from '../../api/client'
 import { MessageList } from './MessageList'
@@ -6,6 +6,9 @@ import { ChatInput } from './ChatInput'
 import { ModelSelector } from './ModelSelector'
 import { AuditPanel } from './AuditPanel'
 import { SettingsPanel } from '../settings/SettingsPanel'
+
+/** Throttle: update the store at most every N ms during streaming */
+const RENDER_THROTTLE_MS = 150
 
 export function ChatWindow() {
   const [showSettings, setShowSettings] = useState(false)
@@ -18,22 +21,46 @@ export function ChatWindow() {
   const backendReady = useChatStore((s) => s.backendReady)
   const setBackendReady = useChatStore((s) => s.setBackendReady)
 
-  // Check backend readiness on mount
+  const lastRenderRef = useRef(0)
+  const pendingUpdateRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     waitForBackend().then((ready) => setBackendReady(ready))
   }, [setBackendReady])
 
+  /** Update the last assistant message content, throttled */
+  const flushContent = useCallback((content: string) => {
+    useChatStore.setState((state) => {
+      const msgs = state.messages.slice()
+      const lastIdx = msgs.length - 1
+      if (lastIdx >= 0 && msgs[lastIdx].role === 'assistant') {
+        msgs[lastIdx] = { ...msgs[lastIdx], content }
+      }
+      return { messages: msgs }
+    })
+    lastRenderRef.current = Date.now()
+  }, [])
+
+  const throttledUpdate = useCallback((content: string) => {
+    const now = Date.now()
+    if (pendingUpdateRef.current) {
+      clearTimeout(pendingUpdateRef.current)
+    }
+    if (now - lastRenderRef.current >= RENDER_THROTTLE_MS) {
+      flushContent(content)
+    } else {
+      pendingUpdateRef.current = setTimeout(() => {
+        flushContent(content)
+        pendingUpdateRef.current = null
+      }, RENDER_THROTTLE_MS)
+    }
+  }, [flushContent])
+
   const handleSend = useCallback(
     async (text: string) => {
-      const userMsg = {
-        role: 'user' as const,
-        content: text,
-        timestamp: Date.now(),
-      }
-      addMessage(userMsg)
+      addMessage({ role: 'user', content: text, timestamp: Date.now() })
       addAuditEntry('send', `User: ${text.slice(0, 80)}`)
 
-      // Add empty assistant placeholder for streaming
       addMessage({
         role: 'assistant',
         content: '',
@@ -50,14 +77,7 @@ export function ChatWindow() {
           switch (event.type) {
             case 'text':
               fullContent += event.content
-              useChatStore.setState((state) => {
-                const msgs = [...state.messages]
-                const lastIdx = msgs.length - 1
-                if (lastIdx >= 0 && msgs[lastIdx].role === 'assistant') {
-                  msgs[lastIdx] = { ...msgs[lastIdx], content: fullContent }
-                }
-                return { messages: msgs }
-              })
+              throttledUpdate(fullContent)
               break
 
             case 'tool_call':
@@ -68,7 +88,6 @@ export function ChatWindow() {
                 input: event.input,
                 timestamp: Date.now(),
               })
-              addAuditEntry('tool_call', event.name)
               break
 
             case 'tool_result':
@@ -79,7 +98,6 @@ export function ChatWindow() {
                 result: event.result,
                 timestamp: Date.now(),
               })
-              addAuditEntry('tool_result', `${event.name}: ${event.result.slice(0, 80)}`)
               break
 
             case 'screenshot':
@@ -89,20 +107,11 @@ export function ChatWindow() {
                 type: 'screenshot',
                 timestamp: Date.now(),
               })
-              addAuditEntry('screenshot', 'Screenshot captured')
               break
 
             case 'error':
               fullContent += `\nError: ${event.content}`
-              addAuditEntry('error', event.content)
-              useChatStore.setState((state) => {
-                const msgs = [...state.messages]
-                const lastIdx = msgs.length - 1
-                if (lastIdx >= 0 && msgs[lastIdx].role === 'assistant') {
-                  msgs[lastIdx] = { ...msgs[lastIdx], content: fullContent }
-                }
-                return { messages: msgs }
-              })
+              flushContent(fullContent)
               break
 
             case 'done':
@@ -110,23 +119,22 @@ export function ChatWindow() {
           }
         }
 
+        // Final flush to make sure we have the complete content
+        flushContent(fullContent)
         addAuditEntry('response', `${activeModel.name}: ${fullContent.slice(0, 80)}`)
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err)
-        useChatStore.setState((state) => {
-          const msgs = [...state.messages]
-          const lastIdx = msgs.length - 1
-          if (lastIdx >= 0 && msgs[lastIdx].role === 'assistant') {
-            msgs[lastIdx] = { ...msgs[lastIdx], content: `Erreur: ${errMsg}` }
-          }
-          return { messages: msgs }
-        })
+        flushContent(`Erreur: ${errMsg}`)
         addAuditEntry('error', errMsg)
       } finally {
+        if (pendingUpdateRef.current) {
+          clearTimeout(pendingUpdateRef.current)
+          pendingUpdateRef.current = null
+        }
         setStreaming(false)
       }
     },
-    [activeModel, addMessage, setStreaming, addAuditEntry, addAgentAction, setCurrentScreenshot],
+    [activeModel, addMessage, setStreaming, addAuditEntry, addAgentAction, setCurrentScreenshot, throttledUpdate, flushContent],
   )
 
   if (!backendReady) {

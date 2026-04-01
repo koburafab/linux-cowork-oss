@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, memo, useMemo } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 
 function formatTimestamp(ts: number): string {
@@ -10,30 +10,23 @@ function formatTimestamp(ts: number): string {
   })
 }
 
-/**
- * Basic markdown: **bold**, `inline code`, ```code blocks```, and lists (- item)
- */
 function renderMarkdown(text: string): React.ReactNode[] {
   const blocks = text.split(/```([\s\S]*?)```/)
   const nodes: React.ReactNode[] = []
 
   for (let i = 0; i < blocks.length; i++) {
     if (i % 2 === 1) {
-      // Code block
       nodes.push(
         <pre key={i} className="msg-code-block">
           <code>{blocks[i].replace(/^\w*\n/, '')}</code>
         </pre>,
       )
     } else {
-      // Regular text with inline formatting
       const lines = blocks[i].split('\n')
       const lineNodes: React.ReactNode[] = []
 
       for (let j = 0; j < lines.length; j++) {
         const line = lines[j]
-
-        // List items
         if (/^\s*[-*]\s/.test(line)) {
           lineNodes.push(
             <div key={`${i}-${j}`} className="msg-list-item">
@@ -57,7 +50,6 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = []
-  // Match **bold** and `code`
   const regex = /(\*\*(.+?)\*\*|`([^`]+)`)/g
   let lastIndex = 0
   let match: RegExpExecArray | null
@@ -85,13 +77,43 @@ function renderInline(text: string): React.ReactNode[] {
   return parts
 }
 
+/** Single message — memoized to avoid re-rendering old messages */
+const MessageItem = memo(function MessageItem({
+  role,
+  content,
+  timestamp,
+  model,
+}: {
+  role: string
+  content: string
+  timestamp: number
+  model?: string
+}) {
+  const rendered = useMemo(
+    () => renderMarkdown(content),
+    [content],
+  )
+
+  return (
+    <div className={`message message--${role}`}>
+      <div className="message__header">
+        <span className="message__role">
+          {role === 'user' ? 'You' : model || 'Assistant'}
+        </span>
+        <span className="message__time">{formatTimestamp(timestamp)}</span>
+      </div>
+      <div className="message__content">{rendered}</div>
+    </div>
+  )
+})
+
 export function MessageList() {
   const messages = useChatStore((s) => s.messages)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages.length])
 
   if (messages.length === 0) {
     return (
@@ -106,22 +128,13 @@ export function MessageList() {
   return (
     <div className="message-list">
       {messages.map((msg, i) => (
-        <div
-          key={`${msg.timestamp}-${i}`}
-          className={`message message--${msg.role}`}
-        >
-          <div className="message__header">
-            <span className="message__role">
-              {msg.role === 'user' ? 'You' : msg.model || 'Assistant'}
-            </span>
-            <span className="message__time">
-              {formatTimestamp(msg.timestamp)}
-            </span>
-          </div>
-          <div className="message__content">
-            {renderMarkdown(typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
-          </div>
-        </div>
+        <MessageItem
+          key={`msg-${i}`}
+          role={msg.role}
+          content={typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+          timestamp={msg.timestamp}
+          model={msg.model}
+        />
       ))}
       <div ref={bottomRef} />
     </div>
