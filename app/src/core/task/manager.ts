@@ -82,7 +82,7 @@ export class TaskManager {
     values.push(id)
     this.db
       .prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`)
-      .run(...values)
+      .run(...(values as [string, ...string[]]))
 
     return this.getTask(id)
   }

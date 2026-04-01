@@ -3,10 +3,10 @@
 > Ce fichier est la source de verite pour l'avancement du projet.
 > Toute nouvelle session Claude Code DOIT lire ce fichier en premier.
 
-## Etat Actuel: PHASE 2 — COMPUTER USE
+## Etat Actuel: PHASE 4 — POLISH
 
-**Derniere mise a jour**: 2026-04-02 00:30
-**Derniere session**: Phase 0 + Phase 1 completees. 62 tests passent.
+**Derniere mise a jour**: 2026-04-02 02:00
+**Derniere session**: Phases 0-3 completees. 162 tests passent.
 
 ## Checklist Globale
 
@@ -30,30 +30,32 @@
 - [ ] Permission system basique (allow/deny)
 - [x] Tests unitaires core (62 tests)
 
-### Phase 2 — Computer Use (EN COURS)
+### Phase 2 — Computer Use (DONE)
 - [x] Screenshot capture module (scrot/grim)
 - [x] Mouse control module (xdotool/ydotool)
 - [x] Keyboard control module (xdotool/ydotool)
 - [x] Window management module (wmctrl)
-- [ ] Tests screenshot reels (capturer ecran, verifier fichier)
-- [ ] Vision model integration (envoyer screenshot a Claude/Gemini)
-- [ ] Computer Use MCP server (exposer comme outils MCP)
-- [ ] Lock system (file-based)
-- [ ] Tests computer use integration
+- [x] Vision model integration (Anthropic + Ollama image support)
+- [x] Computer Use MCP server (7 outils exposes)
+- [x] Lock system (file-based, O_EXCL, stale recovery)
+- [x] Permission system (deny/allow/ask, 3 modes, glob matching)
+- [x] Audit trail standalone (SQLite + file log)
+- [x] Tests computer use integration (20 tests)
 
-### Phase 3 — Agent System (TODO)
-- [ ] MCP client
-- [ ] Skills/plugins
-- [ ] Hooks system
-- [ ] Task management
-- [ ] Sub-agent spawning
-- [ ] Tests agents
+### Phase 3 — Agent System (DONE)
+- [x] MCP client (connect, listTools, callTool)
+- [x] Skills/plugins (frontmatter YAML, hot-reload, .md/.json)
+- [x] Hooks system (7 events, serial exec, blocking)
+- [x] Task management (SQLite CRUD, async runTask)
+- [x] Sub-agent spawning (in-process, isolated conversations)
+- [x] Tests agents (45 tests)
 
-### Phase 4 — Polish (TODO)
-- [ ] Permission system complet
-- [ ] Wayland support complet
+### Phase 4 — Polish (EN COURS)
+- [ ] Wayland support complet (ydotool + grim tests)
 - [ ] Undo/rollback file operations
 - [ ] Packaging (.deb, .AppImage)
+- [ ] Build Tauri complet (desktop app qui se lance)
+- [ ] Integration end-to-end (UI → engine → model → response)
 
 ## Comment Reprendre
 
