@@ -1,12 +1,14 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { streamChat, waitForBackend } from '../../api/client'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { ModelSelector } from './ModelSelector'
 import { AuditPanel } from './AuditPanel'
+import { SettingsPanel } from '../settings/SettingsPanel'
 
 export function ChatWindow() {
+  const [showSettings, setShowSettings] = useState(false)
   const addMessage = useChatStore((s) => s.addMessage)
   const activeModel = useChatStore((s) => s.activeModel)
   const setStreaming = useChatStore((s) => s.setStreaming)
@@ -144,11 +146,21 @@ export function ChatWindow() {
     <div className="chat-window">
       <div className="chat-window__header">
         <h1 className="chat-window__title">Linux Cowork</h1>
-        <ModelSelector />
+        <div className="chat-window__header-controls">
+          <ModelSelector />
+          <button
+            className="chat-window__settings-btn"
+            onClick={() => setShowSettings((v) => !v)}
+            title="Settings"
+          >
+            ⚙
+          </button>
+        </div>
       </div>
       <MessageList />
       <ChatInput onSend={handleSend} />
       <AuditPanel />
+      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
     </div>
   )
 }
