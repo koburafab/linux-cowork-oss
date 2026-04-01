@@ -37,12 +37,13 @@
 - Build Vite OK (82 modules, 189ms)
 - Build Tauri en cours (compilation Rust)
 
-## Stats
-- **3,174 lignes de code** (28 fichiers source)
-- **162 tests qui passent** (15 fichiers test)
+## Stats (mise a jour 04:00)
+- **3,592 lignes de code** (30 fichiers source)
+- **3,233 lignes de tests** (21 fichiers test)
+- **228 tests qui passent, 5 skip, 0 fail**
 - **13 docs d'architecture**
-- **5 commits git**
-- **0 fails**
+- **7 commits git**
+- **.deb 2.9MB + .rpm 2.9MB + binaire 9MB**
 
 ## Problemes rencontres
 - Node.js 18 trop vieux pour Vite 8 → contourne avec `bunx --bun`
