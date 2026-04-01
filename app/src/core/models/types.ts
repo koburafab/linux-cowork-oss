@@ -17,10 +17,18 @@ export interface ModelConfig {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system'
-  content: string
+  role: 'user' | 'assistant' | 'system' | 'tool'
+  content: string | ContentBlock[]
   timestamp: number
   model?: string
+  /** OpenAI-format tool calls attached to an assistant message */
+  tool_calls?: Array<{
+    id: string
+    type: 'function'
+    function: { name: string; arguments: string }
+  }>
+  /** For role:'tool' messages (OpenAI format) */
+  tool_call_id?: string
 }
 
 export interface StreamChunk {

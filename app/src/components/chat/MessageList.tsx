@@ -119,7 +119,7 @@ export function MessageList() {
             </span>
           </div>
           <div className="message__content">
-            {renderMarkdown(msg.content)}
+            {renderMarkdown(typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
           </div>
         </div>
       ))}

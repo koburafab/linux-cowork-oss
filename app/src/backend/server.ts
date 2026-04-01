@@ -7,6 +7,7 @@ import { cors } from 'hono/cors'
 import { coworkApp } from '../core/integration'
 import { createChatRoutes } from './routes/chat'
 import { createComputerUseRoutes } from './routes/computer-use'
+import { createAutonomousRoutes } from './routes/autonomous'
 import { createSystemRoutes } from './routes/system'
 import { createDefaultRegistry } from './tool-registry'
 
@@ -29,6 +30,7 @@ export function createServer(): Hono {
   // Mount routes
   app.route('/api', createChatRoutes(toolRegistry))
   app.route('/api', createComputerUseRoutes())
+  app.route('/api', createAutonomousRoutes(toolRegistry))
   app.route('/api', createSystemRoutes())
 
   // Health check
