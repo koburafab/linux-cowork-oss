@@ -14,6 +14,7 @@ import type {
   ContentBlock,
 } from '../core/models/types'
 import type { ToolRegistry } from './tool-registry'
+import { notify } from '../core/notifications'
 
 export interface SSEEvent {
   type: 'text' | 'tool_call' | 'tool_result' | 'screenshot' | 'done' | 'error'
@@ -101,6 +102,8 @@ export async function* toolUseLoop(
 
     // No tool calls — model is done
     if (pendingToolCalls.length === 0) {
+      const summary = assistantText.slice(0, 80)
+      notify('Linux Cowork', `Task completed: ${summary}`)
       yield { type: 'done' }
       return
     }

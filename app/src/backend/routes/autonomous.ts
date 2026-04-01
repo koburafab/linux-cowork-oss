@@ -11,6 +11,7 @@ import { loadSettings } from '../../core/settings'
 import { DEFAULT_MODELS } from '../../core/models/types'
 import { acquireLock, releaseLock } from '../../core/computer-use/lock'
 import { randomUUID } from 'node:crypto'
+import { notify } from '../../core/notifications'
 
 type AutonomousMode = 'computer-use' | 'file-ops' | 'auto'
 
@@ -98,6 +99,7 @@ export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
         }
 
         try {
+          let lastText = ''
           for await (const event of toolUseLoop(
             body.task,
             history,
@@ -109,6 +111,13 @@ export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
               systemPrompt,
             },
           )) {
+            if (event.type === 'text' && event.content) {
+              lastText = event.content
+            }
+            if (event.type === 'done') {
+              const summary = (lastText || body.task).slice(0, 80)
+              notify('Linux Cowork', `Autonomous task completed: ${summary}`)
+            }
             send(event)
           }
         } catch (err: unknown) {
