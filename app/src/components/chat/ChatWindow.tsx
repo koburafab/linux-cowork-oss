@@ -57,9 +57,9 @@ export function ChatWindow() {
   }, [flushContent])
 
   const handleSend = useCallback(
-    async (text: string) => {
+    async (text: string, agentMode = false) => {
       addMessage({ role: 'user', content: text, timestamp: Date.now() })
-      addAuditEntry('send', `User: ${text.slice(0, 80)}`)
+      addAuditEntry('send', `User${agentMode ? ' [Agent]' : ''}: ${text.slice(0, 80)}`)
 
       addMessage({
         role: 'assistant',
@@ -73,7 +73,7 @@ export function ChatWindow() {
       try {
         let fullContent = ''
 
-        for await (const event of streamChat(text)) {
+        for await (const event of streamChat(text, { useTools: agentMode })) {
           switch (event.type) {
             case 'text':
               fullContent += event.content

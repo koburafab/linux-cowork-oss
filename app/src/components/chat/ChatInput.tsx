@@ -2,11 +2,12 @@ import { useState, useRef, useCallback, type KeyboardEvent } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 
 interface ChatInputProps {
-  onSend: (message: string) => void
+  onSend: (message: string, agentMode: boolean) => void
 }
 
 export function ChatInput({ onSend }: ChatInputProps) {
   const [text, setText] = useState('')
+  const [agentMode, setAgentMode] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isStreaming = useChatStore((s) => s.isStreaming)
 
@@ -20,13 +21,13 @@ export function ChatInput({ onSend }: ChatInputProps) {
   const handleSend = useCallback(() => {
     const trimmed = text.trim()
     if (!trimmed || isStreaming) return
-    onSend(trimmed)
+    onSend(trimmed, agentMode)
     setText('')
     // Reset height after send
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
-  }, [text, isStreaming, onSend])
+  }, [text, isStreaming, onSend, agentMode])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -40,6 +41,17 @@ export function ChatInput({ onSend }: ChatInputProps) {
 
   return (
     <div className="chat-input">
+      <label className="agent-toggle" title="Agent Mode — active les outils">
+        <input
+          type="checkbox"
+          className="agent-toggle__checkbox"
+          checked={agentMode}
+          onChange={(e) => setAgentMode(e.target.checked)}
+          disabled={isStreaming}
+        />
+        <span className="agent-toggle__slider" />
+        <span className="agent-toggle__label">Agent</span>
+      </label>
       <textarea
         ref={textareaRef}
         className="chat-input__textarea"
@@ -49,7 +61,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
           autoResize()
         }}
         onKeyDown={handleKeyDown}
-        placeholder={isStreaming ? 'En attente...' : 'Message...'}
+        placeholder={isStreaming ? 'En attente...' : agentMode ? 'Agent mode — tools enabled...' : 'Message...'}
         disabled={isStreaming}
         rows={1}
       />

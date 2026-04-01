@@ -377,6 +377,69 @@
   color: var(--accent);
 }
 
+/* ── Agent Toggle ── */
+
+.agent-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.agent-toggle__checkbox {
+  display: none;
+}
+
+.agent-toggle__slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.agent-toggle__slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--text);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.agent-toggle__checkbox:checked + .agent-toggle__slider {
+  background: #22c55e;
+}
+
+.agent-toggle__checkbox:checked + .agent-toggle__slider::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.agent-toggle__checkbox:disabled + .agent-toggle__slider {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.agent-toggle__label {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.agent-toggle__checkbox:checked ~ .agent-toggle__label {
+  color: #22c55e;
+}
+
 /* ── Chat Input ── */
 
 .chat-input {
