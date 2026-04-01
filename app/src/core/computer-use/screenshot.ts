@@ -53,10 +53,39 @@ export async function captureScreenshot(
   const quality = options.quality ?? 75
   const outPath = join(tmpdir(), `cowork-screenshot-${Date.now()}.jpg`)
 
+  // GNOME Wayland: gnome-screenshot works, grim doesn't (no wlr-screencopy)
+  if (hasCommand('gnome-screenshot')) {
+    return captureGnome(outPath, options, quality)
+  }
   if (display === 'wayland') {
     return captureWayland(outPath, options, quality)
   }
   return captureX11(outPath, options, quality)
+}
+
+async function captureGnome(
+  outPath: string,
+  options: ScreenshotOptions,
+  _quality: number,
+): Promise<ScreenshotResult> {
+  const pngPath = outPath.replace('.jpg', '.png')
+
+  switch (options.mode) {
+    case 'window':
+      execSync(`gnome-screenshot -w -f "${pngPath}"`, { stdio: 'pipe' })
+      break
+    default:
+      execSync(`gnome-screenshot -f "${pngPath}"`, { stdio: 'pipe' })
+  }
+
+  // Convert to JPEG for smaller size
+  if (hasCommand('convert')) {
+    execSync(`convert "${pngPath}" -quality ${_quality} "${outPath}"`, { stdio: 'pipe' })
+    unlinkSync(pngPath)
+    return processScreenshot(outPath, options.maxWidth)
+  }
+
+  return processScreenshot(pngPath, options.maxWidth)
 }
 
 async function captureX11(
