@@ -43,6 +43,12 @@ docs/
 - [ ] Architecture design de l'app
 - [ ] MVP implementation
 
+## Disclaimer
+
+This project is **not affiliated with, endorsed by, or maintained by Anthropic**.
+It is an independent, clean-room implementation inspired by the concept of AI desktop assistants.
+No proprietary source code has been copied.
+
 ## License
 
-TBD
+MIT License - see [LICENSE](LICENSE)
