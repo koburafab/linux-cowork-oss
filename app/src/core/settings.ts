@@ -7,6 +7,14 @@ import * as path from 'node:path'
 import * as os from 'node:os'
 import { watch } from 'chokidar'
 
+export interface ApiKeys {
+  anthropic?: string
+  deepseek?: string
+  moonshot?: string
+  openrouter?: string
+  [key: string]: string | undefined
+}
+
 export interface Settings {
   activeModel: string
   theme: 'dark' | 'light' | 'auto'
@@ -14,16 +22,18 @@ export interface Settings {
   temperature: number
   ollamaUrl: string
   anthropicApiKey: string
+  apiKeys: ApiKeys
   systemPrompt: string
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  activeModel: 'claude-sonnet',
+  activeModel: 'deepseek-chat',
   theme: 'dark',
   maxTokens: 4096,
   temperature: 0.7,
   ollamaUrl: 'http://localhost:11434',
   anthropicApiKey: '',
+  apiKeys: {},
   systemPrompt:
     'You are a helpful AI assistant running on Linux. You can see the screen, control mouse/keyboard, and manage files.',
 }

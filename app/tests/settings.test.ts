@@ -24,7 +24,7 @@ describe('Settings', () => {
   describe('getDefaultSettings', () => {
     it('should return sensible defaults', () => {
       const defaults = getDefaultSettings()
-      expect(defaults.activeModel).toBe('claude-sonnet')
+      expect(defaults.activeModel).toBe('deepseek-chat')
       expect(defaults.theme).toBe('dark')
       expect(defaults.maxTokens).toBe(4096)
       expect(defaults.temperature).toBe(0.7)

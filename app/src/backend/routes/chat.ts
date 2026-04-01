@@ -28,9 +28,16 @@ export function createChatRoutes(toolRegistry: ToolRegistry): Hono {
       DEFAULT_MODELS.find((m) => m.id === (body.model || settings.activeModel)) ||
       DEFAULT_MODELS[0]
 
-    // Override API key from settings if available
-    if (settings.anthropicApiKey && modelConfig.provider === 'anthropic') {
-      modelConfig.apiKey = settings.anthropicApiKey
+    // Inject API key from settings — keys stay server-side, never sent to WebView
+    const keys = settings.apiKeys || {}
+    if (modelConfig.provider === 'anthropic') {
+      modelConfig.apiKey = keys.anthropic || settings.anthropicApiKey || ''
+    } else if (modelConfig.baseUrl?.includes('deepseek.com')) {
+      modelConfig.apiKey = keys.deepseek || ''
+    } else if (modelConfig.baseUrl?.includes('moonshot.cn')) {
+      modelConfig.apiKey = keys.moonshot || ''
+    } else if (modelConfig.baseUrl?.includes('openrouter.ai')) {
+      modelConfig.apiKey = keys.openrouter || ''
     }
 
     const history = body.history || []
