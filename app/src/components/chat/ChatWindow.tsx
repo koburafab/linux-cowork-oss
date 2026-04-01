@@ -101,7 +101,7 @@ export function ChatWindow() {
               break
 
             case 'screenshot':
-              setCurrentScreenshot(event.base64)
+              setCurrentScreenshot(event.base64, Date.now())
               addAgentAction({
                 id: crypto.randomUUID(),
                 type: 'screenshot',

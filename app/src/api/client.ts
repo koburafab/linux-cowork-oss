@@ -118,6 +118,29 @@ export async function getAudit(): Promise<Record<string, unknown>[]> {
   return res.json()
 }
 
+// --- File history / undo ---
+
+/**
+ * Undo the last file modification (restore previous snapshot)
+ */
+export async function undoFile(path: string): Promise<{ ok: boolean; snapshot?: unknown; error?: string }> {
+  const res = await fetch(`${BACKEND_URL}/api/undo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+  return res.json()
+}
+
+/**
+ * Get file history (all snapshots for a given path)
+ */
+export async function getFileHistory(path: string): Promise<{ path: string; snapshots: unknown[] }> {
+  const encoded = encodeURIComponent(path)
+  const res = await fetch(`${BACKEND_URL}/api/file-history/${encoded}`)
+  return res.json()
+}
+
 // --- Conversations ---
 
 export async function getConversations(): Promise<{ conversations: Array<{ id: number; title: string; model: string; created_at: string }> }> {

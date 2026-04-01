@@ -12,8 +12,9 @@ import { DEFAULT_MODELS } from '../../core/models/types'
 import { acquireLock, releaseLock } from '../../core/computer-use/lock'
 import { randomUUID } from 'node:crypto'
 import { notify } from '../../core/notifications'
+import { captureScreenshot } from '../../core/computer-use/screenshot'
 
-type AutonomousMode = 'computer-use' | 'file-ops' | 'auto'
+type AutonomousMode = 'computer-use' | 'file-ops' | 'auto' | 'vision-loop'
 
 const SYSTEM_PROMPTS: Record<AutonomousMode, string> = {
   'computer-use':
@@ -30,6 +31,11 @@ const SYSTEM_PROMPTS: Record<AutonomousMode, string> = {
     'Choose the best approach: use screenshot + click for GUI tasks, or bash/file tools for CLI tasks. ' +
     'Take a screenshot first to understand the current state. ' +
     'After each action, verify the result. Continue until the task is complete.',
+  'vision-loop':
+    'You are a vision-loop agent continuously observing the screen. ' +
+    'Analyze each screenshot. Respond with JSON: {"action":"wait"} if nothing to do, ' +
+    'or {"action":"act","description":"what to do"} if you see something actionable. ' +
+    'Be concise.',
 }
 
 export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
@@ -130,6 +136,142 @@ export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
             } catch {
               // Lock may already be released
             }
+          }
+          controller.close()
+        }
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    })
+  })
+
+  // --- Vision loop mode ---
+  app.post('/autonomous/vision-loop', async (c) => {
+    const body = await c.req.json<{
+      task: string
+      model?: string
+      intervalMs?: number
+      maxIterations?: number
+      timeoutMs?: number
+    }>()
+
+    if (!body.task || typeof body.task !== 'string') {
+      return c.json({ error: 'task is required' }, 400)
+    }
+
+    const intervalMs = body.intervalMs ?? 2000
+    const maxIterations = body.maxIterations ?? 150
+    const timeoutMs = body.timeoutMs ?? 5 * 60 * 1000
+    const systemPrompt = SYSTEM_PROMPTS['vision-loop']
+
+    const settings = loadSettings()
+    const modelConfig: ModelConfig =
+      DEFAULT_MODELS.find(
+        (m) => m.id === (body.model || settings.activeModel),
+      ) || DEFAULT_MODELS[0]
+
+    // Inject API key
+    const keys = settings.apiKeys || {}
+    if (modelConfig.provider === 'anthropic') {
+      modelConfig.apiKey = keys.anthropic || settings.anthropicApiKey || ''
+    } else if (modelConfig.baseUrl?.includes('deepseek.com')) {
+      modelConfig.apiKey = keys.deepseek || ''
+    } else if (modelConfig.baseUrl?.includes('moonshot.cn')) {
+      modelConfig.apiKey = keys.moonshot || ''
+    } else if (modelConfig.baseUrl?.includes('openrouter.ai')) {
+      modelConfig.apiKey = keys.openrouter || ''
+    }
+
+    // Acquire lock
+    const sessionId = randomUUID()
+    try {
+      acquireLock(sessionId)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return c.json({ error: `Cannot acquire lock: ${msg}` }, 409)
+    }
+
+    c.header('Content-Type', 'text/event-stream')
+    c.header('Cache-Control', 'no-cache')
+    c.header('Connection', 'keep-alive')
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder()
+
+        function send(event: unknown): void {
+          const data = JSON.stringify(event)
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+        }
+
+        const startTime = Date.now()
+        try {
+          for (let i = 0; i < maxIterations; i++) {
+            if (Date.now() - startTime >= timeoutMs) {
+              send({ type: 'error', content: 'Vision loop timeout' })
+              break
+            }
+
+            // Capture screenshot
+            let screenshot: { base64?: string }
+            try {
+              screenshot = await captureScreenshot({ mode: 'fullscreen', quality: 60 })
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err)
+              send({ type: 'error', content: `Screenshot failed: ${msg}` })
+              break
+            }
+
+            const base64 = screenshot.base64 ?? ''
+
+            // Emit screenshot event
+            send({ type: 'screenshot', base64, timestamp: Date.now() })
+
+            // Ask the model to analyze
+            const userMsg = `Screenshot captured. Task: ${body.task}\nAnalyze the screenshot and decide: act or wait.`
+            const messages: ChatMessage[] = [
+              { role: 'system', content: systemPrompt, timestamp: Date.now() },
+              { role: 'user', content: userMsg, timestamp: Date.now() },
+            ]
+
+            try {
+              // Use the tool loop for a single iteration (model decides)
+              for await (const event of toolUseLoop(
+                userMsg,
+                [],
+                modelConfig,
+                toolRegistry,
+                {
+                  maxIterations: 1,
+                  timeoutMs: 30_000,
+                  systemPrompt,
+                },
+              )) {
+                if (event.type === 'text') {
+                  send({ type: 'text', content: event.content })
+                }
+              }
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err)
+              send({ type: 'error', content: msg })
+            }
+
+            // Wait before next iteration
+            await new Promise((r) => setTimeout(r, intervalMs))
+          }
+
+          send({ type: 'done' })
+        } finally {
+          try {
+            releaseLock()
+          } catch {
+            // Already released
           }
           controller.close()
         }

@@ -30,6 +30,7 @@ interface ChatState {
   auditLog: AuditEntry[]
   agentActions: AgentAction[]
   currentScreenshot: string | null
+  screenshotTimestamp: number | null
   isAutonomous: boolean
   backendReady: boolean
   activeConversationId: number | null
@@ -41,7 +42,7 @@ interface ChatState {
   setStreaming: (streaming: boolean) => void
   addAuditEntry: (action: string, details: string) => void
   addAgentAction: (action: AgentAction) => void
-  setCurrentScreenshot: (base64: string | null) => void
+  setCurrentScreenshot: (base64: string | null, timestamp?: number) => void
   setAutonomous: (active: boolean) => void
   setBackendReady: (ready: boolean) => void
   clearAgentActions: () => void
@@ -57,6 +58,7 @@ export const useChatStore = create<ChatState>((set) => ({
   auditLog: [],
   agentActions: [],
   currentScreenshot: null,
+  screenshotTimestamp: null,
   isAutonomous: false,
   backendReady: false,
   activeConversationId: null,
@@ -90,13 +92,13 @@ export const useChatStore = create<ChatState>((set) => ({
       agentActions: [...state.agentActions, action],
     })),
 
-  setCurrentScreenshot: (base64) => set({ currentScreenshot: base64 }),
+  setCurrentScreenshot: (base64, timestamp) => set({ currentScreenshot: base64, screenshotTimestamp: timestamp ?? Date.now() }),
 
   setAutonomous: (active) => set({ isAutonomous: active }),
 
   setBackendReady: (ready) => set({ backendReady: ready }),
 
-  clearAgentActions: () => set({ agentActions: [], currentScreenshot: null }),
+  clearAgentActions: () => set({ agentActions: [], currentScreenshot: null, screenshotTimestamp: null }),
 
   setActiveConversation: (id) => set({ activeConversationId: id }),
 

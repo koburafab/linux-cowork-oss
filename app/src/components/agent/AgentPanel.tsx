@@ -1,18 +1,47 @@
 /**
- * AgentPanel — side panel showing agent actions, screenshots, and stop control
+ * AgentPanel — side panel showing agent actions, screenshots, undo, and stop control
  */
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { ScreenshotViewer } from './ScreenshotViewer'
+import { undoFile } from '../../api/client'
+
+/** Tools that modify files and support undo */
+const FILE_MODIFYING_TOOLS = new Set(['write_file', 'edit_file'])
 
 export function AgentPanel() {
   const [visible, setVisible] = useState(true)
+  const [undoStates, setUndoStates] = useState<Record<string, 'idle' | 'undone'>>({})
+  const [screenshotPulse, setScreenshotPulse] = useState(false)
+  const lastScreenshotTs = useRef<number>(0)
   const agentActions = useChatStore((s) => s.agentActions)
   const currentScreenshot = useChatStore((s) => s.currentScreenshot)
+  const screenshotTimestamp = useChatStore((s) => s.screenshotTimestamp)
   const isAutonomous = useChatStore((s) => s.isAutonomous)
   const setAutonomous = useChatStore((s) => s.setAutonomous)
   const clearAgentActions = useChatStore((s) => s.clearAgentActions)
+
+  // Pulse animation when a new screenshot arrives
+  useEffect(() => {
+    const ts = screenshotTimestamp ?? 0
+    if (ts > lastScreenshotTs.current) {
+      lastScreenshotTs.current = ts
+      setScreenshotPulse(true)
+      const timer = setTimeout(() => setScreenshotPulse(false), 600)
+      return () => clearTimeout(timer)
+    }
+  }, [screenshotTimestamp])
+
+  async function handleUndo(actionId: string, filePath: string) {
+    setUndoStates((prev) => ({ ...prev, [actionId]: 'idle' }))
+    try {
+      await undoFile(filePath)
+      setUndoStates((prev) => ({ ...prev, [actionId]: 'undone' }))
+    } catch {
+      // Silently fail — button stays visible for retry
+    }
+  }
 
   if (!visible) {
     return (
@@ -51,7 +80,9 @@ export function AgentPanel() {
       </div>
 
       {currentScreenshot && (
-        <ScreenshotViewer base64={currentScreenshot} timestamp={Date.now()} />
+        <div className={`agent-panel__screenshot-wrapper${screenshotPulse ? ' agent-panel__screenshot--pulse' : ''}`}>
+          <ScreenshotViewer base64={currentScreenshot} timestamp={screenshotTimestamp ?? Date.now()} />
+        </div>
       )}
 
       <div className="agent-panel__actions">
@@ -77,6 +108,28 @@ export function AgentPanel() {
                   {action.result.slice(0, 300)}
                 </pre>
               )}
+              {action.type === 'tool_result' && action.name && FILE_MODIFYING_TOOLS.has(action.name) && (() => {
+                // Find the matching tool_call to get the file path
+                const matchingCall = agentActions.find(
+                  (a) => a.type === 'tool_call' && a.name === action.name && a.timestamp <= action.timestamp && a.input?.path,
+                )
+                const filePath = (matchingCall?.input?.path ?? action.input?.path) as string | undefined
+                if (!filePath) return null
+                return (
+                  <span className="agent-action__undo">
+                    {undoStates[action.id] === 'undone' ? (
+                      <span className="agent-action__undo-done">Undone!</span>
+                    ) : (
+                      <button
+                        className="agent-action__undo-btn"
+                        onClick={() => handleUndo(action.id, filePath)}
+                      >
+                        Undo
+                      </button>
+                    )}
+                  </span>
+                )
+              })()}
             </div>
             <span className="agent-action__time">
               {new Date(action.timestamp).toLocaleTimeString('fr-CH', {
