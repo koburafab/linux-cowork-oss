@@ -14,6 +14,7 @@ import {
 } from '../core/computer-use/input'
 import { readFile, writeFile, listDir } from '../core/file-access'
 import { execSync } from 'node:child_process'
+import os from 'node:os'
 import { saveMemory, getMemories } from '../core/memory/db'
 
 export type ToolExecutor = (
@@ -325,6 +326,141 @@ export function createDefaultRegistry(): ToolRegistry {
         return 'No memories saved yet.'
       }
       return JSON.stringify(memories)
+    },
+  })
+
+  // --- Quick-win tools ---
+
+  registry.register({
+    definition: {
+      name: 'read_clipboard',
+      description: 'Read the current clipboard content.',
+      input_schema: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
+    executor: async () => {
+      try {
+        const content = execSync('xclip -selection clipboard -o', {
+          encoding: 'utf-8',
+          timeout: 5_000,
+        })
+        return content
+      } catch (err: unknown) {
+        const e = err as { stderr?: string; message?: string }
+        return `Error: ${e.stderr || e.message || 'failed to read clipboard'}`
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'write_clipboard',
+      description: 'Write text to the clipboard.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to write to clipboard' },
+        },
+        required: ['text'],
+      },
+    },
+    executor: async (input) => {
+      try {
+        execSync('xclip -selection clipboard', {
+          input: input.text as string,
+          encoding: 'utf-8',
+          timeout: 5_000,
+        })
+        return `Clipboard updated (${(input.text as string).length} chars)`
+      } catch (err: unknown) {
+        const e = err as { stderr?: string; message?: string }
+        return `Error: ${e.stderr || e.message || 'failed to write clipboard'}`
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'system_info',
+      description: 'Get system information.',
+      input_schema: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
+    executor: async () => {
+      const info = {
+        hostname: os.hostname(),
+        username: os.userInfo().username,
+        platform: process.platform,
+        uptime: os.uptime(),
+        memory: {
+          free: os.freemem(),
+          total: os.totalmem(),
+        },
+        display_server: process.env.WAYLAND_DISPLAY || process.env.DISPLAY || 'unknown',
+        cpu_model: os.cpus()[0]?.model || 'unknown',
+      }
+      return JSON.stringify(info)
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'open_url',
+      description: 'Open a URL in the default browser.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to open' },
+        },
+        required: ['url'],
+      },
+    },
+    executor: async (input) => {
+      try {
+        const url = input.url as string
+        execSync(`xdg-open "${url}"`, {
+          timeout: 10_000,
+          stdio: 'ignore',
+        })
+        return `Opened URL: ${url}`
+      } catch (err: unknown) {
+        const e = err as { stderr?: string; message?: string }
+        return `Error: ${e.stderr || e.message || 'failed to open URL'}`
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'open_app',
+      description: 'Open an application by name.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Application name (e.g. "firefox", "nautilus")' },
+        },
+        required: ['name'],
+      },
+    },
+    executor: async (input) => {
+      try {
+        const appName = input.name as string
+        execSync(`gtk-launch ${appName} 2>/dev/null || ${appName} &`, {
+          timeout: 10_000,
+          stdio: 'ignore',
+          shell: '/bin/bash',
+        })
+        return `Launched: ${appName}`
+      } catch (err: unknown) {
+        const e = err as { stderr?: string; message?: string }
+        return `Error: ${e.stderr || e.message || 'failed to launch app'}`
+      }
     },
   })
 
