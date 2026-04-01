@@ -14,6 +14,7 @@ import {
 } from '../core/computer-use/input'
 import { readFile, writeFile, listDir } from '../core/file-access'
 import { execSync } from 'node:child_process'
+import { saveMemory, getMemories } from '../core/memory/db'
 
 export type ToolExecutor = (
   input: Record<string, unknown>,
@@ -277,6 +278,53 @@ export function createDefaultRegistry(): ToolRegistry {
         const e = err as { stderr?: string; message?: string }
         return `Error: ${e.stderr || e.message || 'command failed'}`
       }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'save_memory',
+      description:
+        'Save something to remember for future conversations. Use this to store important facts about the user, their preferences, or key information they want you to recall later.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          content: {
+            type: 'string',
+            description: 'What to remember',
+          },
+        },
+        required: ['content'],
+      },
+    },
+    executor: async (input) => {
+      const content = input.content as string
+      const id = saveMemory({
+        type: 'user',
+        name: 'memory',
+        content,
+      })
+      return `Saved memory #${id}: ${content}`
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'recall_memories',
+      description:
+        'Recall what you know about the user from past conversations. Returns all saved memories.',
+      input_schema: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
+    executor: async () => {
+      const memories = getMemories()
+      if (memories.length === 0) {
+        return 'No memories saved yet.'
+      }
+      return JSON.stringify(memories)
     },
   })
 

@@ -118,6 +118,27 @@ export async function getAudit(): Promise<Record<string, unknown>[]> {
   return res.json()
 }
 
+// --- Conversations ---
+
+export async function getConversations(): Promise<{ conversations: Array<{ id: number; title: string; model: string; created_at: string }> }> {
+  const res = await fetch(`${BACKEND_URL}/api/conversations`)
+  return res.json()
+}
+
+export async function createConversation(title: string, model: string): Promise<{ id: number }> {
+  const res = await fetch(`${BACKEND_URL}/api/conversations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, model }),
+  })
+  return res.json()
+}
+
+export async function getConversationMessages(id: number): Promise<{ messages: Array<{ id: number; conversation_id: number; role: string; content: string; timestamp: number; model?: string }> }> {
+  const res = await fetch(`${BACKEND_URL}/api/conversations/${id}/messages`)
+  return res.json()
+}
+
 /**
  * Poll /api/status until backend responds — returns true if ready
  */

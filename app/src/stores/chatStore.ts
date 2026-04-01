@@ -32,6 +32,7 @@ interface ChatState {
   currentScreenshot: string | null
   isAutonomous: boolean
   backendReady: boolean
+  activeConversationId: number | null
 
   // Actions
   addMessage: (msg: ChatMessage) => void
@@ -44,6 +45,8 @@ interface ChatState {
   setAutonomous: (active: boolean) => void
   setBackendReady: (ready: boolean) => void
   clearAgentActions: () => void
+  setActiveConversation: (id: number | null) => void
+  loadConversation: (messages: ChatMessage[]) => void
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -56,6 +59,7 @@ export const useChatStore = create<ChatState>((set) => ({
   currentScreenshot: null,
   isAutonomous: false,
   backendReady: false,
+  activeConversationId: null,
 
   addMessage: (msg) =>
     set((state) => ({
@@ -93,4 +97,8 @@ export const useChatStore = create<ChatState>((set) => ({
   setBackendReady: (ready) => set({ backendReady: ready }),
 
   clearAgentActions: () => set({ agentActions: [], currentScreenshot: null }),
+
+  setActiveConversation: (id) => set({ activeConversationId: id }),
+
+  loadConversation: (messages) => set({ messages }),
 }))

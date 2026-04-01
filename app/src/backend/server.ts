@@ -9,6 +9,8 @@ import { createChatRoutes } from './routes/chat'
 import { createComputerUseRoutes } from './routes/computer-use'
 import { createAutonomousRoutes } from './routes/autonomous'
 import { createSystemRoutes } from './routes/system'
+import { createConversationRoutes } from './routes/conversations'
+import { createMemoryRoutes } from './routes/memories'
 import { createDefaultRegistry } from './tool-registry'
 
 export function createServer(): Hono {
@@ -32,6 +34,8 @@ export function createServer(): Hono {
   app.route('/api', createComputerUseRoutes())
   app.route('/api', createAutonomousRoutes(toolRegistry))
   app.route('/api', createSystemRoutes())
+  app.route('/api', createConversationRoutes())
+  app.route('/api', createMemoryRoutes())
 
   // Health check
   app.get('/health', (c) => c.json({ ok: true }))

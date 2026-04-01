@@ -80,10 +80,10 @@ describe('ToolRegistry', () => {
   })
 
   describe('createDefaultRegistry', () => {
-    it('should register exactly 11 tools', () => {
+    it('should register exactly 13 tools', () => {
       const registry = createDefaultRegistry()
       const defs = registry.getDefinitions()
-      expect(defs).toHaveLength(11)
+      expect(defs).toHaveLength(13)
     })
 
     it('should register all expected tool names', () => {

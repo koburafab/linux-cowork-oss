@@ -155,6 +155,12 @@ export function getMemories(type?: Memory['type']): Memory[] {
   return d.prepare('SELECT * FROM memories ORDER BY created_at DESC').all() as Memory[]
 }
 
+export function deleteMemory(id: number): boolean {
+  const d = getDB()
+  const result = d.prepare('DELETE FROM memories WHERE id = ?').run(id)
+  return result.changes > 0
+}
+
 // --- Conversations ---
 
 export function saveConversation(conv: Conversation): number {
