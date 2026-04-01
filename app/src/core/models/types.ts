@@ -66,20 +66,6 @@ export interface ModelResponse {
 
 export const DEFAULT_MODELS: ModelConfig[] = [
   {
-    id: 'claude-sonnet',
-    name: 'Claude 4.5 Sonnet',
-    provider: 'anthropic',
-    model: 'claude-sonnet-4-5-20250514',
-    maxTokens: 8192,
-  },
-  {
-    id: 'claude-haiku',
-    name: 'Claude Haiku 4.5',
-    provider: 'anthropic',
-    model: 'claude-haiku-4-5-20251001',
-    maxTokens: 4096,
-  },
-  {
     id: 'deepseek-chat',
     name: 'DeepSeek Chat',
     provider: 'openai-compatible',
@@ -109,6 +95,20 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     provider: 'ollama',
     model: 'llama3.2',
     baseUrl: 'http://localhost:11434',
+    maxTokens: 4096,
+  },
+  {
+    id: 'claude-sonnet',
+    name: 'Claude 4.5 Sonnet',
+    provider: 'anthropic',
+    model: 'claude-sonnet-4-5-20250514',
+    maxTokens: 8192,
+  },
+  {
+    id: 'claude-haiku',
+    name: 'Claude Haiku 4.5',
+    provider: 'anthropic',
+    model: 'claude-haiku-4-5-20251001',
     maxTokens: 4096,
   },
 ]
