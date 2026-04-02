@@ -91,9 +91,9 @@ export const DEFAULT_MODELS: ModelConfig[] = [
   },
   {
     id: 'ollama-default',
-    name: 'Ollama Local',
+    name: 'Ollama Local (1B)',
     provider: 'ollama',
-    model: 'llama3.2',
+    model: 'llama3.2:1b',
     baseUrl: 'http://localhost:11434',
     maxTokens: 4096,
   },
