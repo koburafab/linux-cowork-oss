@@ -1,3 +1,39 @@
+# Daily Report — 2026-04-02 (sprint final)
+
+## Stats actualisees
+
+| Metrique | Valeur |
+|----------|--------|
+| Lignes de code source (app/src) | **6,738** |
+| Lignes de tests (app/tests) | **4,945** |
+| Tests | **308 pass, 7 skip, 0 fail** |
+| Commits | **26** |
+| Tests robustesse ajoutes | **14** |
+
+## Tests de robustesse (robustness.test.ts)
+
+- Chat retourne erreur propre si model config invalide (router throw + error chunk)
+- Tool-loop s'arrete apres maxIterations (teste avec 2 et 1)
+- Tool-loop gere un executor qui throw (error capturee, loop continue)
+- POST /api/chat retourne 400 sans message
+- POST /api/autonomous retourne 400 sans task
+- GET /api/agents/fake retourne 404
+- DELETE /api/agents/fake retourne 404
+- POST /api/agents/fake/message retourne 404
+- GET /api/conversations/99999/messages gere gracieusement
+- GET /api/conversations/not-a-number/messages retourne 400
+
+## Test mobile HTML (localhost:3001)
+
+- `grep -c "input|button|message"` = 16 (OK)
+- DeepSeek Chat + DeepSeek Reasoner presents dans le select (OK)
+
+## Screenshot
+
+- `screenshots/sprint1-final.png` (79 KB)
+
+---
+
 # Daily Report — 2026-04-02 (matin)
 
 ## Salut Fab ! Voila ce qui s'est passe cette nuit.

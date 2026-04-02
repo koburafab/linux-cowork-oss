@@ -32,8 +32,8 @@
 
 - [x] **Undo visible dans l'UI** — bouton "Annuler" apres chaque action agent
 - [x] **Vision continue** — POST /api/autonomous/vision-loop (screenshots every 2s)
-- [ ] **Multi-agents E2E** — connecter l'orchestrator a l'UI
-- [ ] **Rebuild .deb** avec toutes les features
+- [x] **Multi-agents E2E** — routes /api/agents, spawn dialog, status badges, kill
+- [x] **Rebuild .deb** — /usr/bin/linux-cowork, toutes features incluses
 - [x] **Test E2E complet** — 4/5 workflows PASS, screenshots dans /screenshots/
 
 ## Sprint 2 (a venir)
