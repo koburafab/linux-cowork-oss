@@ -65,7 +65,8 @@ export function createDefaultRegistry(): ToolRegistry {
     executor: async (_input) => {
       const result = await captureScreenshot({
         mode: 'fullscreen',
-        maxWidth: 1280,
+        maxWidth: 1024,
+        quality: 40,
       })
       return [
         {
