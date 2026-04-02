@@ -3,6 +3,7 @@
   "productName": "linux-cowork",
   "version": "0.1.0",
   "identifier": "ch.ethernity.linux-cowork",
+  "mainBinaryName": "linux-cowork",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -25,7 +26,6 @@
   },
   "bundle": {
     "active": true,
-    "mainBinaryName": "linux-cowork",
     "targets": "all",
     "icon": [
       "icons/32x32.png",

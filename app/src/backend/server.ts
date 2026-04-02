@@ -11,6 +11,7 @@ import { createAutonomousRoutes } from './routes/autonomous'
 import { createSystemRoutes } from './routes/system'
 import { createConversationRoutes } from './routes/conversations'
 import { createMemoryRoutes } from './routes/memories'
+import { createAgentRoutes } from './routes/agents'
 import { createDefaultRegistry } from './tool-registry'
 import { DEFAULT_MODELS } from '../core/models/types'
 
@@ -37,6 +38,7 @@ export function createServer(): Hono {
   app.route('/api', createSystemRoutes())
   app.route('/api', createConversationRoutes())
   app.route('/api', createMemoryRoutes())
+  app.route('/api', createAgentRoutes())
 
   // Health check
   app.get('/health', (c) => c.json({ ok: true }))

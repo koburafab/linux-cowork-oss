@@ -2,10 +2,11 @@
  * AgentPanel — side panel showing agent actions, screenshots, undo, and stop control
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { ScreenshotViewer } from './ScreenshotViewer'
-import { undoFile } from '../../api/client'
+import { undoFile, listAgents, spawnAgent, killAgent } from '../../api/client'
+import type { AgentInfo } from '../../api/client'
 
 /** Tools that modify files and support undo */
 const FILE_MODIFYING_TOOLS = new Set(['write_file', 'edit_file'])
@@ -15,6 +16,10 @@ export function AgentPanel() {
   const [undoStates, setUndoStates] = useState<Record<string, 'idle' | 'undone'>>({})
   const [screenshotPulse, setScreenshotPulse] = useState(false)
   const lastScreenshotTs = useRef<number>(0)
+  const [liveAgents, setLiveAgents] = useState<AgentInfo[]>([])
+  const [showSpawnDialog, setShowSpawnDialog] = useState(false)
+  const [spawnName, setSpawnName] = useState('')
+  const [spawnTask, setSpawnTask] = useState('')
   const agentActions = useChatStore((s) => s.agentActions)
   const currentScreenshot = useChatStore((s) => s.currentScreenshot)
   const screenshotTimestamp = useChatStore((s) => s.screenshotTimestamp)
@@ -32,6 +37,44 @@ export function AgentPanel() {
       return () => clearTimeout(timer)
     }
   }, [screenshotTimestamp])
+
+  // Poll active agents every 5 seconds
+  const fetchAgents = useCallback(async () => {
+    try {
+      const data = await listAgents()
+      setLiveAgents(data.agents ?? [])
+    } catch {
+      // Backend not available — keep stale data
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAgents()
+    const timer = setInterval(fetchAgents, 5000)
+    return () => clearInterval(timer)
+  }, [fetchAgents])
+
+  async function handleSpawn() {
+    if (!spawnName.trim() || !spawnTask.trim()) return
+    try {
+      await spawnAgent({ name: spawnName.trim(), task: spawnTask.trim() })
+      setSpawnName('')
+      setSpawnTask('')
+      setShowSpawnDialog(false)
+      fetchAgents()
+    } catch {
+      // Silently fail
+    }
+  }
+
+  async function handleKill(id: string) {
+    try {
+      await killAgent(id)
+      fetchAgents()
+    } catch {
+      // Silently fail
+    }
+  }
 
   async function handleUndo(actionId: string, filePath: string) {
     setUndoStates((prev) => ({ ...prev, [actionId]: 'idle' }))
@@ -84,6 +127,59 @@ export function AgentPanel() {
           <ScreenshotViewer base64={currentScreenshot} timestamp={screenshotTimestamp ?? Date.now()} />
         </div>
       )}
+
+      {/* Multi-agent section */}
+      <div className="agent-panel__multi">
+        <div className="agent-panel__multi-header">
+          <h3 className="agent-panel__subtitle">Agents</h3>
+          <button
+            className="agent-panel__spawn-btn"
+            onClick={() => setShowSpawnDialog((v) => !v)}
+          >
+            Spawn Agent
+          </button>
+        </div>
+
+        {showSpawnDialog && (
+          <div className="agent-panel__spawn-dialog">
+            <input
+              className="agent-panel__spawn-input"
+              type="text"
+              placeholder="Agent name"
+              value={spawnName}
+              onChange={(e) => setSpawnName(e.target.value)}
+            />
+            <input
+              className="agent-panel__spawn-input"
+              type="text"
+              placeholder="Task"
+              value={spawnTask}
+              onChange={(e) => setSpawnTask(e.target.value)}
+            />
+            <button className="agent-panel__spawn-confirm" onClick={handleSpawn}>
+              Go
+            </button>
+          </div>
+        )}
+
+        {liveAgents.length === 0 && (
+          <p className="agent-panel__empty">No active agents.</p>
+        )}
+        {liveAgents.map((a) => (
+          <div key={a.id} className="agent-panel__agent-row">
+            <span className="agent-panel__agent-name">{a.name}</span>
+            <span className={`agent-panel__agent-status agent-panel__agent-status--${a.status}`}>
+              {a.status}
+            </span>
+            <button
+              className="agent-panel__kill-btn"
+              onClick={() => handleKill(a.id)}
+            >
+              Kill
+            </button>
+          </div>
+        ))}
+      </div>
 
       <div className="agent-panel__actions">
         {agentActions.length === 0 && (

@@ -162,6 +162,61 @@ export async function getConversationMessages(id: number): Promise<{ messages: A
   return res.json()
 }
 
+// --- Multi-agent ---
+
+export interface SpawnAgentConfig {
+  name: string
+  model?: string
+  systemPrompt?: string
+  task: string
+}
+
+export interface AgentInfo {
+  id: string
+  name: string
+  status: 'running' | 'done' | 'failed'
+  task: string
+  createdAt: number
+}
+
+/**
+ * Spawn a new agent
+ */
+export async function spawnAgent(config: SpawnAgentConfig): Promise<{ id: string; name: string; status: string }> {
+  const res = await fetch(`${BACKEND_URL}/api/agents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  })
+  return res.json()
+}
+
+/**
+ * List all active agents
+ */
+export async function listAgents(): Promise<{ agents: AgentInfo[] }> {
+  const res = await fetch(`${BACKEND_URL}/api/agents`)
+  return res.json()
+}
+
+/**
+ * Get a specific agent with history
+ */
+export async function getAgent(id: string): Promise<AgentInfo & { history: unknown[] }> {
+  const res = await fetch(`${BACKEND_URL}/api/agents/${encodeURIComponent(id)}`)
+  return res.json()
+}
+
+/**
+ * Kill an agent
+ */
+export async function killAgent(id: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`${BACKEND_URL}/api/agents/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+  return res.json()
+}
+
 /**
  * Poll /api/status until backend responds — returns true if ready
  */

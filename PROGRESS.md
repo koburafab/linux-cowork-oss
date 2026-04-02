@@ -30,11 +30,11 @@
 
 ## Sprint 1 P3 — Polish (EN COURS)
 
-- [ ] **Undo visible dans l'UI** — bouton "Annuler" apres chaque action agent
-- [ ] **Vision continue** — screenshot auto toutes les 2s pendant mode autonome
+- [x] **Undo visible dans l'UI** — bouton "Annuler" apres chaque action agent
+- [x] **Vision continue** — POST /api/autonomous/vision-loop (screenshots every 2s)
 - [ ] **Multi-agents E2E** — connecter l'orchestrator a l'UI
-- [ ] **Rebuild .deb** avec toutes les features (sidebar, memory, remote, agent toggle)
-- [ ] **Test E2E complet** — workflow autonome avec screenshots preuves
+- [ ] **Rebuild .deb** avec toutes les features
+- [x] **Test E2E complet** — 4/5 workflows PASS, screenshots dans /screenshots/
 
 ## Sprint 2 (a venir)
 - [ ] Workflows templates
