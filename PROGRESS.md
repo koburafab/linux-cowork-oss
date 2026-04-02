@@ -26,7 +26,8 @@
 - [x] Settings UI (API keys, model, temperature)
 - [x] Permissions + hooks + skills + tasks + orchestrator
 - [x] .deb package
-- [x] 280 tests, 0 fail
+- [x] 308 tests, 0 fail
+- [x] Ollama local (llama3.2:1b, CPU-only, zero cloud)
 
 ## Sprint 1 P3 — Polish (EN COURS)
 
