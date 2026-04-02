@@ -118,6 +118,22 @@ export async function getAudit(): Promise<Record<string, unknown>[]> {
   return res.json()
 }
 
+// --- Workflows ---
+
+export interface Workflow {
+  id: string
+  name: string
+  description: string
+  icon: string
+  mode: 'chat' | 'file-ops' | 'computer-use'
+  prompt: string
+}
+
+export async function getWorkflows(): Promise<{ workflows: Workflow[] }> {
+  const res = await fetch(`${BACKEND_URL}/api/workflows`)
+  return res.json()
+}
+
 // --- File history / undo ---
 
 /**

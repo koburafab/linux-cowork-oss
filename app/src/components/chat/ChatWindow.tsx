@@ -6,6 +6,7 @@ import { ChatInput } from './ChatInput'
 import { ModelSelector } from './ModelSelector'
 import { AuditPanel } from './AuditPanel'
 import { SettingsPanel } from '../settings/SettingsPanel'
+import { WorkflowGrid } from '../workflows/WorkflowGrid'
 
 /** Throttle: update the store at most every N ms during streaming */
 const RENDER_THROTTLE_MS = 150
@@ -18,6 +19,7 @@ export function ChatWindow() {
   const addAuditEntry = useChatStore((s) => s.addAuditEntry)
   const addAgentAction = useChatStore((s) => s.addAgentAction)
   const setCurrentScreenshot = useChatStore((s) => s.setCurrentScreenshot)
+  const messages = useChatStore((s) => s.messages)
   const backendReady = useChatStore((s) => s.backendReady)
   const setBackendReady = useChatStore((s) => s.setBackendReady)
 
@@ -165,7 +167,11 @@ export function ChatWindow() {
           </button>
         </div>
       </div>
-      <MessageList />
+      {messages.length === 0 ? (
+        <WorkflowGrid onSelect={(prompt, useTools) => handleSend(prompt, useTools)} />
+      ) : (
+        <MessageList />
+      )}
       <ChatInput onSend={handleSend} />
       <AuditPanel />
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
