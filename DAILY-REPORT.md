@@ -1,102 +1,91 @@
-# Daily Report — 2026-04-03 (Jour 2/3 autonome)
+# Daily Report — 2026-04-03 (Jour 3/3 — dernier jour autonome)
 
-## Salut Fab ! Voila ou on en est.
+## Fab, bienvenue ! Voila ce qui t'attend.
 
-### Tout marche. Zero fail. Sprint 1 complet.
-
-## Stats
+## Stats finales
 
 | Metrique | Valeur |
 |----------|--------|
 | Lignes source | **6,738** |
 | Lignes tests | **4,945** |
+| Total lignes | **11,683** |
 | Tests | **308 pass, 7 skip, 0 fail** |
-| Commits | **28** |
+| Commits | **31** |
 | Tools | **18** |
+| Providers | **3** (DeepSeek, Claude, Ollama) |
 | .deb | **linux-cowork_0.1.0_amd64.deb** |
 
-## Ce qui a ete fait ces 2 nuits
+## Ce qui est FAIT (Sprint 1 complet)
 
-### Nuit 1 (1-2 avril)
-- MVP complet en une nuit (Phases 0-4)
-- Chat UI + multi-model router + computer use + tools + backend Hono
-- .deb package installe et fonctionnel
+### Core
+- Multi-model router (DeepSeek default, Kimi, Claude, Ollama local)
+- Tool-use loop (18 tools, OpenAI + Anthropic format, max 25 iterations)
+- Backend Hono (0.0.0.0:3001, SSE streaming)
+- Tauri sidecar auto-start
+- SQLite persistence (conversations, messages, memories, audit)
 
-### Jour 2 (2 avril)
-- **Agent Mode toggle** — switch dans le chat pour activer les tools
-- **Historique conversations** — SQLite, sidebar cliquable
-- **Agent memory** — save_memory / recall_memories (se souvient entre convos)
-- **Remote LAN** — accessible depuis le S23 via http://192.168.0.X:3001
-- **Notifications desktop** — notify-send quand une tache est finie
-- **18 tools** — +clipboard, system_info, open_url, open_app
-- **Settings UI** — API keys depuis l'app (gear icon)
-- **Undo visible** — bouton Annuler apres write_file
-- **Vision continue** — screenshots auto toutes les 2s
-- **Multi-agents E2E** — spawn/list/kill agents depuis l'UI
-- **Tests robustesse** — 14 tests error handling
+### UI
+- Chat avec streaming + Agent Mode toggle
+- Sidebar conversations (historique cliquable)
+- Settings panel (API keys, model, temperature)
+- Agent panel (actions, screenshots, undo, spawn agents)
+- Dark theme responsive
 
-### Nuit 2 (2-3 avril)
-- **Ollama installe** — llama3.2:1b local, zero cloud, streaming OK
-- **Fix binary name** — /usr/bin/linux-cowork
-- **.deb rebuildé** avec toutes les features
+### Computer Use
+- gnome-screenshot (32KB optimized)
+- xdotool (mouse, keyboard, windows)
+- Vision loop (screenshots auto 2s)
+- Mode autonome (POST /api/autonomous)
 
-## 3 Providers fonctionnels
+### Infra
+- Remote LAN (http://192.168.0.X:3001 depuis le S23)
+- Ollama local (llama3.2:1b, CPU, gratuit)
+- Notifications desktop (notify-send)
+- Undo system (FileHistoryManager)
+- 308 tests de robustesse
+- .deb package avec /usr/bin/linux-cowork
+- MIT License + disclaimer
 
-| Provider | Model | Latence | Cout |
-|----------|-------|---------|------|
-| DeepSeek | deepseek-chat | ~1.5s | $0.14/Mtok |
-| Ollama | llama3.2:1b | ~2s (CPU) | Gratuit |
-| Claude | sonnet/haiku | ~1s | $3-15/Mtok |
+### Pret pour GitHub
+- README pro avec badges, screenshots, comparaison
+- .gitignore propre (pas de secrets, pas de node_modules)
+- 9 screenshots preuves
 
-## E2E Tests (avec DeepSeek)
+## Comment tester
 
-| Workflow | Status |
-|----------|--------|
-| Chat simple | PASS |
-| Bash command (whoami) | PASS |
-| File creation | PASS |
-| Screenshot + description | PASS (partiel — timeout sur gros base64) |
-| Memory store/recall | PASS |
-| System info | PASS |
+```bash
+# Installer le .deb
+sudo dpkg -i ~/Documents/linux-cowork-oss/app/src-tauri/target/release/bundle/deb/linux-cowork_0.1.0_amd64.deb
 
-## Problemes connus
+# Lancer
+linux-cowork
 
-1. **Screenshot base64 trop gros** pour DeepSeek en mode autonome — le streaming SSE timeout sur les images > 100KB. Fix possible: compresser + redimensionner avant envoi.
-2. **vi.mock pollution** dans bun test — certains fichiers test avec vi.mock cassent d'autres fichiers quand tout tourne en parallele. Contourne en reecrivant les tests sans vi.mock.
-3. **CPU-only Ollama** sur le NUC — llama3.2:1b est petit mais lent. Le DGX de Fab permettra des modeles plus gros quand dispo.
+# Ou juste le backend
+cd ~/Documents/linux-cowork-oss/app && bun run src/backend/server.ts
+
+# Chat DeepSeek
+curl -X POST http://localhost:3001/api/chat -H 'Content-Type: application/json' -d '{"message":"Salut!"}'
+
+# Chat Ollama (local, gratuit)
+curl -X POST http://localhost:3001/api/chat -H 'Content-Type: application/json' -d '{"message":"Hello","model":"ollama-default"}'
+
+# Mode autonome
+curl -X POST http://localhost:3001/api/autonomous -H 'Content-Type: application/json' -d '{"task":"List files","mode":"file-ops"}'
+
+# Depuis le tel
+# http://192.168.0.X:3001
+```
 
 ## Prochaines etapes (Sprint 2)
 
-1. **Workflows templates** — presets de taches ("organise mes photos", "backup", etc.)
-2. **Plugin marketplace** — browser de skills dans l'UI
-3. **Voice input** — whisper local ou API
-4. **Connexion Trismegis** — bridge vers le Hub M900
-5. **Publish GitHub** — README, demo, landing page
+1. **Publish GitHub** — README pret, juste `git remote add origin && git push`
+2. **Workflows templates** — presets de taches
+3. **Voice input** — whisper local
+4. **Connexion Trismegis** — bridge Hub M900
+5. **DGX** — quand dispo, gros modeles locaux
 
-## Pour tester
+## Problemes connus
 
-```bash
-# Lancer l'app
-/usr/bin/linux-cowork
-
-# Ou lancer le backend seul
-cd ~/Documents/linux-cowork-oss/app && bun run src/backend/server.ts
-
-# Chat depuis le terminal
-curl -s -X POST http://localhost:3001/api/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"Salut!"}'
-
-# Chat avec Ollama local
-curl -s -X POST http://localhost:3001/api/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"Hello","model":"ollama-default"}'
-
-# Mode autonome
-curl -s -X POST http://localhost:3001/api/autonomous \
-  -H 'Content-Type: application/json' \
-  -d '{"task":"List files in home directory","mode":"file-ops"}'
-
-# Depuis le telephone
-# Ouvrir http://192.168.0.X:3001 dans le navigateur du S23
-```
+1. Wayland computer use limité (xdotool marche pas, ydotool partiel)
+2. Ollama CPU-only sur le NUC (lent, 1B model seulement)
+3. Screenshot timeout si image trop grosse (fixé: 32KB maintenant)
