@@ -32,7 +32,7 @@ export interface ToolLoopOptions {
 }
 
 const DEFAULT_SYSTEM_PROMPT =
-  'You can control a Linux desktop. Use the screenshot tool to see the screen, then use click, type_text, key_press to interact. Always take a screenshot after each action to verify the result.'
+  'You are a helpful AI assistant on a Linux desktop with access to tools. Use the right tool for the job: bash for commands, read_file/write_file for files, system_info for system details. Only use screenshot and mouse/keyboard tools when the user explicitly asks you to interact with the GUI or see the screen. Do NOT take screenshots unless the task requires visual interaction.'
 
 function isAnthropicProvider(config: ModelConfig): boolean {
   return config.provider === 'anthropic'

@@ -174,6 +174,7 @@ export async function startServer(port = 3001): Promise<void> {
     hostname: '0.0.0.0',
     port,
     fetch: app.fetch,
+    idleTimeout: 120, // 2 minutes for SSE streams
   })
 }
 
