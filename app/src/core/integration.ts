@@ -46,7 +46,7 @@ export class CoworkApp {
     if (this._initialized) return
 
     // 1. Database
-    this.db = initDB(options?.dbPath ?? ':memory:')
+    this.db = initDB(options?.dbPath) // defaults to ~/.local/share/linux-cowork/memory.db
 
     // 2. Audit
     const auditLogDir = options?.auditLogPath
