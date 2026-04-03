@@ -14,6 +14,7 @@ import { createMemoryRoutes } from './routes/memories'
 import { createAgentRoutes } from './routes/agents'
 import { createWorkflowRoutes } from './routes/workflows'
 import { createPluginRoutes } from './routes/plugins'
+import { createMcpRoutes } from './routes/mcp'
 import { createDefaultRegistry } from './tool-registry'
 import { DEFAULT_MODELS } from '../core/models/types'
 
@@ -43,6 +44,7 @@ export function createServer(): Hono {
   app.route('/api', createAgentRoutes())
   app.route('/api', createWorkflowRoutes())
   app.route('/api', createPluginRoutes())
+  app.route('/api', createMcpRoutes())
 
   // Health check
   app.get('/health', (c) => c.json({ ok: true }))

@@ -39,9 +39,9 @@ function buildPluginList(): Plugin[] {
 }
 
 describe('Plugins', () => {
-  it('should return at least 18 plugins (built-in tools)', () => {
+  it('should return at least 19 plugins (built-in tools)', () => {
     const plugins = buildPluginList()
-    expect(plugins.length).toBeGreaterThanOrEqual(18)
+    expect(plugins.length).toBeGreaterThanOrEqual(19)
   })
 
   it('every plugin has id, name, and type', () => {
@@ -58,7 +58,7 @@ describe('Plugins', () => {
   it('built-in plugins are enabled by default', () => {
     const plugins = buildPluginList()
     const builtins = plugins.filter((p) => p.type === 'builtin')
-    expect(builtins.length).toBe(18)
+    expect(builtins.length).toBe(19)
     for (const p of builtins) {
       expect(p.enabled).toBe(true)
     }

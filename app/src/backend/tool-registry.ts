@@ -465,5 +465,159 @@ export function createDefaultRegistry(): ToolRegistry {
     },
   })
 
+  registry.register({
+    definition: {
+      name: 'youtube_transcript',
+      description:
+        'Get the transcript/subtitles of a YouTube video by URL or video ID.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          url: {
+            type: 'string',
+            description:
+              'YouTube URL (e.g. https://youtube.com/watch?v=xxx) or just the video ID',
+          },
+        },
+        required: ['url'],
+      },
+    },
+    executor: async (input) => {
+      const raw = (input.url as string).trim()
+      const videoId = extractYouTubeVideoId(raw)
+      if (!videoId) {
+        return `Error: could not extract video ID from "${raw}"`
+      }
+
+      // Check yt-dlp is available
+      try {
+        execSync('which yt-dlp', { encoding: 'utf-8', timeout: 5_000 })
+      } catch {
+        return 'yt-dlp not installed. Run: sudo apt install yt-dlp'
+      }
+
+      try {
+        const tmpDir = os.tmpdir()
+        const outTemplate = `${tmpDir}/yt-transcript-${videoId}`
+
+        // Clean up any previous files
+        try {
+          execSync(`rm -f ${outTemplate}*.vtt ${outTemplate}*.json`, {
+            timeout: 5_000,
+          })
+        } catch {
+          // ignore
+        }
+
+        // Download auto-subs (fr,en) without downloading the video
+        execSync(
+          `yt-dlp --write-auto-sub --sub-lang "fr,en" --skip-download -o "${outTemplate}" "https://www.youtube.com/watch?v=${videoId}"`,
+          { encoding: 'utf-8', timeout: 60_000 },
+        )
+
+        // Find the generated .vtt file(s)
+        const vttFiles = execSync(`ls ${outTemplate}*.vtt 2>/dev/null || true`, {
+          encoding: 'utf-8',
+          timeout: 5_000,
+        })
+          .trim()
+          .split('\n')
+          .filter(Boolean)
+
+        if (vttFiles.length === 0) {
+          return `No subtitles found for video ${videoId}`
+        }
+
+        // Read the first available subtitle file and parse VTT
+        const vttContent = execSync(`cat "${vttFiles[0]}"`, {
+          encoding: 'utf-8',
+          timeout: 5_000,
+        })
+
+        const transcript = parseVtt(vttContent)
+
+        // Clean up
+        try {
+          execSync(`rm -f ${outTemplate}*.vtt ${outTemplate}*.json`, {
+            timeout: 5_000,
+          })
+        } catch {
+          // ignore
+        }
+
+        return transcript || 'Transcript is empty.'
+      } catch (err: unknown) {
+        const e = err as { stderr?: string; message?: string }
+        return `Error fetching transcript: ${e.stderr || e.message || 'unknown error'}`
+      }
+    },
+  })
+
   return registry
+}
+
+/**
+ * Extract a YouTube video ID from various URL formats or a bare ID.
+ */
+export function extractYouTubeVideoId(input: string): string | null {
+  // Already a bare video ID (11 chars, alphanumeric + _ + -)
+  if (/^[A-Za-z0-9_-]{11}$/.test(input)) {
+    return input
+  }
+
+  // Standard: youtube.com/watch?v=ID
+  const watchMatch = input.match(
+    /(?:youtube\.com|youtube-nocookie\.com)\/watch\?.*v=([A-Za-z0-9_-]{11})/,
+  )
+  if (watchMatch) return watchMatch[1]
+
+  // Short: youtu.be/ID
+  const shortMatch = input.match(/youtu\.be\/([A-Za-z0-9_-]{11})/)
+  if (shortMatch) return shortMatch[1]
+
+  // Embed: youtube.com/embed/ID
+  const embedMatch = input.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/)
+  if (embedMatch) return embedMatch[1]
+
+  // Shorts: youtube.com/shorts/ID
+  const shortsMatch = input.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/)
+  if (shortsMatch) return shortsMatch[1]
+
+  return null
+}
+
+/**
+ * Parse VTT subtitle content into plain text, removing timestamps and duplicates.
+ */
+function parseVtt(vtt: string): string {
+  const lines = vtt.split('\n')
+  const textLines: string[] = []
+  const seen = new Set<string>()
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    // Skip empty, WEBVTT header, timestamps, and NOTE lines
+    if (
+      !trimmed ||
+      trimmed.startsWith('WEBVTT') ||
+      trimmed.startsWith('Kind:') ||
+      trimmed.startsWith('Language:') ||
+      trimmed.startsWith('NOTE') ||
+      /^\d{2}:\d{2}/.test(trimmed) ||
+      /^[\d]+$/.test(trimmed)
+    ) {
+      continue
+    }
+    // Strip VTT tags like <c> </c> <00:01:23.456>
+    const clean = trimmed
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim()
+    if (clean && !seen.has(clean)) {
+      seen.add(clean)
+      textLines.push(clean)
+    }
+  }
+
+  return textLines.join('\n')
 }
