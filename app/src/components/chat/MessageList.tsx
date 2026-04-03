@@ -1,5 +1,6 @@
-import { useEffect, useRef, memo, useMemo } from 'react'
+import { useEffect, useRef, memo, useMemo, useCallback } from 'react'
 import { useChatStore } from '../../stores/chatStore'
+import { extractArtifactBlocks, blockToArtifact } from '../../utils/artifacts'
 
 function formatTimestamp(ts: number): string {
   const d = new Date(ts)
@@ -10,16 +11,38 @@ function formatTimestamp(ts: number): string {
   })
 }
 
-function renderMarkdown(text: string): React.ReactNode[] {
+/** Artifact-eligible language tags */
+const ARTIFACT_LANGS = new Set(['html', 'svg', 'mermaid'])
+
+function renderMarkdown(
+  text: string,
+  onPreview?: (lang: string, code: string) => void,
+): React.ReactNode[] {
   const blocks = text.split(/```([\s\S]*?)```/)
   const nodes: React.ReactNode[] = []
 
   for (let i = 0; i < blocks.length; i++) {
     if (i % 2 === 1) {
+      // Extract optional language tag from the first line
+      const langMatch = blocks[i].match(/^(\w+)\n/)
+      const lang = langMatch ? langMatch[1].toLowerCase() : ''
+      const code = langMatch ? blocks[i].slice(langMatch[0].length) : blocks[i]
+      const isArtifact = ARTIFACT_LANGS.has(lang)
+
       nodes.push(
-        <pre key={i} className="msg-code-block">
-          <code>{blocks[i].replace(/^\w*\n/, '')}</code>
-        </pre>,
+        <div key={i} className="msg-code-block-wrapper">
+          <pre className="msg-code-block">
+            <code>{code}</code>
+          </pre>
+          {isArtifact && onPreview && (
+            <button
+              className="msg-code-block__preview-btn"
+              onClick={() => onPreview(lang, code)}
+            >
+              Preview
+            </button>
+          )}
+        </div>,
       )
     } else {
       const lines = blocks[i].split('\n')
@@ -89,9 +112,21 @@ const MessageItem = memo(function MessageItem({
   timestamp: number
   model?: string
 }) {
+  const setArtifact = useChatStore((s) => s.setArtifact)
+
+  const handlePreview = useCallback(
+    (lang: string, code: string) => {
+      const blocks = extractArtifactBlocks(`\`\`\`${lang}\n${code}\n\`\`\``)
+      if (blocks.length > 0) {
+        setArtifact(blockToArtifact(blocks[0]))
+      }
+    },
+    [setArtifact],
+  )
+
   const rendered = useMemo(
-    () => renderMarkdown(content),
-    [content],
+    () => renderMarkdown(content, role === 'assistant' ? handlePreview : undefined),
+    [content, role, handlePreview],
   )
 
   return (

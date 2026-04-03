@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useChatStore } from '../../stores/chatStore'
+import { ArtifactViewer } from './ArtifactViewer'
 import { ScreenshotViewer } from './ScreenshotViewer'
 import { undoFile, listAgents, spawnAgent, killAgent } from '../../api/client'
 import type { AgentInfo } from '../../api/client'
@@ -121,6 +122,8 @@ export function AgentPanel() {
           </button>
         </div>
       </div>
+
+      <ArtifactViewer />
 
       {currentScreenshot && (
         <div className={`agent-panel__screenshot-wrapper${screenshotPulse ? ' agent-panel__screenshot--pulse' : ''}`}>

@@ -6,6 +6,14 @@ import { create } from 'zustand'
 import type { ChatMessage, ModelConfig } from '../core/models/types'
 import { DEFAULT_MODELS } from '../core/models/types'
 
+export interface Artifact {
+  id: string
+  type: 'html' | 'svg' | 'mermaid' | 'code'
+  content: string
+  title?: string
+  timestamp: number
+}
+
 interface AuditEntry {
   timestamp: number
   action: string
@@ -33,6 +41,7 @@ interface ChatState {
   screenshotTimestamp: number | null
   isAutonomous: boolean
   backendReady: boolean
+  currentArtifact: Artifact | null
   activeConversationId: number | null
 
   // Actions
@@ -47,6 +56,8 @@ interface ChatState {
   setBackendReady: (ready: boolean) => void
   clearAgentActions: () => void
   setActiveConversation: (id: number | null) => void
+  setArtifact: (artifact: Artifact) => void
+  clearArtifact: () => void
   loadConversation: (messages: ChatMessage[]) => void
 }
 
@@ -60,6 +71,7 @@ export const useChatStore = create<ChatState>((set) => ({
   currentScreenshot: null,
   screenshotTimestamp: null,
   isAutonomous: false,
+  currentArtifact: null,
   backendReady: false,
   activeConversationId: null,
 
@@ -99,6 +111,10 @@ export const useChatStore = create<ChatState>((set) => ({
   setBackendReady: (ready) => set({ backendReady: ready }),
 
   clearAgentActions: () => set({ agentActions: [], currentScreenshot: null, screenshotTimestamp: null }),
+
+  setArtifact: (artifact) => set({ currentArtifact: artifact }),
+
+  clearArtifact: () => set({ currentArtifact: null }),
 
   setActiveConversation: (id) => set({ activeConversationId: id }),
 

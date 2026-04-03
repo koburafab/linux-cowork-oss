@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useChatStore } from '../../stores/chatStore'
+import { detectFirstArtifact } from '../../utils/artifacts'
 import { streamChat, waitForBackend } from '../../api/client'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
@@ -22,6 +23,7 @@ export function ChatWindow() {
   const addAuditEntry = useChatStore((s) => s.addAuditEntry)
   const addAgentAction = useChatStore((s) => s.addAgentAction)
   const setCurrentScreenshot = useChatStore((s) => s.setCurrentScreenshot)
+  const setArtifact = useChatStore((s) => s.setArtifact)
   const messages = useChatStore((s) => s.messages)
   const backendReady = useChatStore((s) => s.backendReady)
   const setBackendReady = useChatStore((s) => s.setBackendReady)
@@ -127,6 +129,12 @@ export function ChatWindow() {
         // Final flush to make sure we have the complete content
         flushContent(fullContent)
         addAuditEntry('response', `${activeModel.name}: ${fullContent.slice(0, 80)}`)
+
+        // Auto-detect artifacts in completed response
+        const artifact = detectFirstArtifact(fullContent)
+        if (artifact) {
+          setArtifact(artifact)
+        }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err)
         flushContent(`Erreur: ${errMsg}`)
@@ -139,7 +147,7 @@ export function ChatWindow() {
         setStreaming(false)
       }
     },
-    [activeModel, addMessage, setStreaming, addAuditEntry, addAgentAction, setCurrentScreenshot, throttledUpdate, flushContent],
+    [activeModel, addMessage, setStreaming, addAuditEntry, addAgentAction, setCurrentScreenshot, setArtifact, throttledUpdate, flushContent],
   )
 
   if (!backendReady) {
