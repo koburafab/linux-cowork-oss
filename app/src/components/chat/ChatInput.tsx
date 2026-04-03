@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, type KeyboardEvent } from 'react'
 import { useChatStore } from '../../stores/chatStore'
+import { SendIcon, BotIcon } from '../icons/Icons'
 
 interface ChatInputProps {
   onSend: (message: string, agentMode: boolean) => void
@@ -50,7 +51,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
           disabled={isStreaming}
         />
         <span className="agent-toggle__slider" />
-        <span className="agent-toggle__label">Agent</span>
+        <span className="agent-toggle__label"><BotIcon size={14} /></span>
       </label>
       <textarea
         ref={textareaRef}
@@ -71,7 +72,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
         disabled={isStreaming || !text.trim()}
         title="Envoyer (Enter)"
       >
-        {isStreaming ? '...' : '->'}
+        {isStreaming ? '...' : <SendIcon size={18} />}
       </button>
     </div>
   )

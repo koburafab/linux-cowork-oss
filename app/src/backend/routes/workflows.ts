@@ -18,7 +18,7 @@ export const DEFAULT_WORKFLOWS: Workflow[] = [
     id: 'organize-downloads',
     name: 'Organize Downloads',
     description: 'Sort files in ~/Downloads by type',
-    icon: '\u{1F4C1}',
+    icon: 'folder',
     mode: 'file-ops',
     prompt:
       'List files in ~/Downloads and suggest how to organize them by type (documents, images, videos, archives). Create the folders and move the files.',
@@ -27,7 +27,7 @@ export const DEFAULT_WORKFLOWS: Workflow[] = [
     id: 'system-health',
     name: 'System Health Check',
     description: 'Check disk, memory, CPU and services',
-    icon: '\u{1F3E5}',
+    icon: 'heart-pulse',
     mode: 'file-ops',
     prompt:
       'Check system health: disk usage (df -h), memory (free -h), CPU load (uptime), running services (systemctl list-units --state=running | head -20). Summarize any issues.',
@@ -36,7 +36,7 @@ export const DEFAULT_WORKFLOWS: Workflow[] = [
     id: 'screenshot-describe',
     name: 'Describe My Screen',
     description: 'Take a screenshot and describe it',
-    icon: '\u{1F4F8}',
+    icon: 'camera',
     mode: 'computer-use',
     prompt: 'Take a screenshot of my desktop and describe everything you see in detail.',
   },
@@ -44,7 +44,7 @@ export const DEFAULT_WORKFLOWS: Workflow[] = [
     id: 'find-large-files',
     name: 'Find Large Files',
     description: 'Find the 20 largest files in home',
-    icon: '\u{1F50D}',
+    icon: 'search',
     mode: 'file-ops',
     prompt:
       'Find the 20 largest files in my home directory (du -sh ~/* | sort -rh | head -20). Tell me what they are and if any can be safely deleted.',
@@ -53,7 +53,7 @@ export const DEFAULT_WORKFLOWS: Workflow[] = [
     id: 'git-status',
     name: 'Git Status Report',
     description: 'Check all git repos in ~/Documents',
-    icon: '\u{1F4CA}',
+    icon: 'git-branch',
     mode: 'file-ops',
     prompt:
       'Check all git repositories in ~/Documents/ (find . -name .git -type d). For each, show the branch, status, and last commit.',
@@ -62,7 +62,7 @@ export const DEFAULT_WORKFLOWS: Workflow[] = [
     id: 'daily-summary',
     name: 'Daily Summary',
     description: 'Uptime, disk, recent files, tasks',
-    icon: '\u{1F4DD}',
+    icon: 'calendar',
     mode: 'file-ops',
     prompt:
       'Give me a summary of today: system uptime, disk usage, recent files modified in the last 24h (find ~ -mtime 0 -type f | head -20), and any running background tasks.',

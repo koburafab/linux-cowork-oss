@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useChatStore } from '../../stores/chatStore'
+import { ChevronLeftIcon, ChevronRightIcon, SettingsIcon, CameraIcon, UndoIcon } from '../icons/Icons'
 import { ArtifactViewer } from './ArtifactViewer'
 import { ScreenshotViewer } from './ScreenshotViewer'
 import { undoFile, listAgents, spawnAgent, killAgent } from '../../api/client'
@@ -91,7 +92,7 @@ export function AgentPanel() {
     return (
       <div className="agent-panel agent-panel--collapsed" onClick={() => setCollapsed(false)}>
         <span className="agent-panel__collapsed-label">AGENT</span>
-        <span className="agent-panel__collapsed-arrow">{'\u25C0'}</span>
+        <span className="agent-panel__collapsed-arrow"><ChevronLeftIcon size={16} /></span>
       </div>
     )
   }
@@ -120,7 +121,7 @@ export function AgentPanel() {
             onClick={() => setCollapsed(true)}
             title="Collapse panel"
           >
-            {'\u25B6'}
+            <ChevronRightIcon size={16} />
           </button>
         </div>
       </div>
@@ -193,9 +194,9 @@ export function AgentPanel() {
         {agentActions.map((action) => (
           <div key={action.id} className={`agent-action agent-action--${action.type}`}>
             <span className="agent-action__icon">
-              {action.type === 'tool_call' && '\u2699'}
+              {action.type === 'tool_call' && <SettingsIcon size={14} />}
               {action.type === 'tool_result' && '\u2713'}
-              {action.type === 'screenshot' && '\u{1F4F7}'}
+              {action.type === 'screenshot' && <CameraIcon size={14} />}
             </span>
             <div className="agent-action__body">
               {action.name && <span className="agent-action__name">{action.name}</span>}

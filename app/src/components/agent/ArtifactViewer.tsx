@@ -4,6 +4,7 @@
 
 import { useCallback, useState } from 'react'
 import { useChatStore } from '../../stores/chatStore'
+import { CopyIcon, ExternalLinkIcon, CloseIcon, FullscreenIcon, RestoreIcon } from '../icons/Icons'
 import { openFile } from '../../api/client'
 import type { Artifact } from '../../stores/chatStore'
 
@@ -100,44 +101,49 @@ export function ArtifactViewer() {
               className="artifact-viewer__btn"
               onClick={() => copyToClipboard(artifact.content)}
             >
-              Copy
+              <CopyIcon size={16} />
             </button>
           )}
           {artifact.type === 'svg' && (
             <button
               className="artifact-viewer__btn"
               onClick={() => downloadSvg(artifact.content)}
+              title="Download"
             >
-              Download
+              <ExternalLinkIcon size={16} />
             </button>
           )}
           {(artifact.type === 'html' || artifact.type === 'svg') && (
             <button
               className="artifact-viewer__btn"
               onClick={handleOpenInBrowser}
+              title="Open in browser"
             >
-              Open
+              <ExternalLinkIcon size={16} />
             </button>
           )}
           {(artifact.type === 'html' || artifact.type === 'svg') && (
             <button
               className="artifact-viewer__btn"
               onClick={handleDetach}
+              title="Detach"
             >
-              Detach
+              <ExternalLinkIcon size={16} />
             </button>
           )}
           <button
             className="artifact-viewer__btn"
             onClick={() => setFullscreen((v) => !v)}
+            title={fullscreen ? 'Restore' : 'Fullscreen'}
           >
-            {fullscreen ? 'Restore' : 'Fullscreen'}
+            {fullscreen ? <RestoreIcon size={16} /> : <FullscreenIcon size={16} />}
           </button>
           <button
             className="artifact-viewer__btn artifact-viewer__btn--close"
             onClick={() => { setFullscreen(false); clearArtifact() }}
+            title="Close"
           >
-            Close
+            <CloseIcon size={16} />
           </button>
         </div>
       </div>

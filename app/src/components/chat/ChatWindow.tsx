@@ -10,6 +10,7 @@ import { TokenCounter } from './TokenCounter'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { PluginBrowser } from '../plugins/PluginBrowser'
 import { WorkflowGrid } from '../workflows/WorkflowGrid'
+import { SettingsIcon, PuzzleIcon } from '../icons/Icons'
 
 /** Throttle: update the store at most every N ms during streaming */
 const RENDER_THROTTLE_MS = 150
@@ -174,14 +175,14 @@ export function ChatWindow() {
             onClick={() => setShowPlugins((v) => !v)}
             title="Plugins"
           >
-            🧩
+            <PuzzleIcon size={18} />
           </button>
           <button
             className="chat-window__settings-btn"
             onClick={() => setShowSettings((v) => !v)}
             title="Settings"
           >
-            ⚙
+            <SettingsIcon size={18} />
           </button>
         </div>
       </div>
