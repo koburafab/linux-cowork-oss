@@ -119,7 +119,9 @@ export function createChatRoutes(toolRegistry: ToolRegistry): Hono {
       model: modelConfig.id || modelConfig.name,
     })
 
-    // Build system prompt with injected memories
+    // Build system prompt: STABLE prefix first, VARIABLE suffix last.
+    // This maximizes prefix cache hits on DeepSeek (prefix caching) and Kimi (auto cache).
+    // The stable instructions stay at the top; memories/user context appended at the end.
     let systemPrompt = settings.systemPrompt
     try {
       const memories = getMemories()

@@ -31,7 +31,14 @@ export interface ToolLoopOptions {
   systemPrompt?: string
 }
 
+/**
+ * System prompt structure: STABLE prefix first, VARIABLE suffix last.
+ * This maximizes prefix cache hits on DeepSeek (prefix caching) and Kimi (auto cache).
+ * The stable part (instructions + tool descriptions) rarely changes and stays at the top.
+ * The variable part (memories, user context) is appended at the end.
+ */
 const DEFAULT_SYSTEM_PROMPT =
+  // --- STABLE SECTION (cacheable prefix) ---
   'You are a helpful AI assistant on a Linux desktop with access to tools. ' +
   'Use the right tool for the job: bash for commands, read_file/write_file for files, system_info for system details. ' +
   'Only use screenshot and mouse/keyboard tools when the user explicitly asks you to interact with the GUI. ' +

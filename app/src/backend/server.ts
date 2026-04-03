@@ -16,9 +16,10 @@ import { createWorkflowRoutes } from './routes/workflows'
 import { createPluginRoutes } from './routes/plugins'
 import { createMcpRoutes } from './routes/mcp'
 import { createDefaultRegistry } from './tool-registry'
+import { connectMcpServers } from './mcp-bridge'
 import { DEFAULT_MODELS } from '../core/models/types'
 
-export function createServer(): Hono {
+export function createServer(injectedRegistry?: import('./tool-registry').ToolRegistry): Hono {
   const app = new Hono()
 
   // CORS for WebView
@@ -31,8 +32,8 @@ export function createServer(): Hono {
     }),
   )
 
-  // Tool registry
-  const toolRegistry = createDefaultRegistry()
+  // Tool registry — use injected one (with MCP tools) or create default
+  const toolRegistry = injectedRegistry ?? createDefaultRegistry()
 
   // Mount routes
   app.route('/api', createChatRoutes(toolRegistry))
@@ -168,7 +169,19 @@ export function createServer(): Hono {
 export async function startServer(port = 3001): Promise<void> {
   await coworkApp.init()
 
-  const app = createServer()
+  // Create tool registry and connect MCP servers (non-blocking — failures are logged)
+  const toolRegistry = createDefaultRegistry()
+  try {
+    const mcpToolCount = await connectMcpServers(toolRegistry)
+    if (mcpToolCount > 0) {
+      console.log(`MCP bridge: ${mcpToolCount} external tools registered`)
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.warn(`MCP bridge init failed (non-fatal): ${msg}`)
+  }
+
+  const app = createServer(toolRegistry)
 
   console.log(`Server listening on http://0.0.0.0:${port}`)
 

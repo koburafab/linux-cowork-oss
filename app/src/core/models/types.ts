@@ -66,6 +66,7 @@ export interface ModelResponse {
 }
 
 export const DEFAULT_MODELS: ModelConfig[] = [
+  // Prefix caching automatique, 95% reduction sur cache hits
   {
     id: 'deepseek-chat',
     name: 'DeepSeek Chat',
@@ -73,6 +74,7 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     model: 'deepseek-chat',
     baseUrl: 'https://api.deepseek.com',
     maxTokens: 8192,
+    temperature: 0.3, // deterministe pour agents
   },
   {
     id: 'deepseek-reasoner',
@@ -82,6 +84,8 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     baseUrl: 'https://api.deepseek.com',
     maxTokens: 8192,
   },
+  // 256K context, vision native, cache automatique 75% reduction
+  // Ne PAS mettre les built-in tools dans le system prompt (Kimi decide seul)
   {
     id: 'kimi-k2',
     name: 'Kimi K2.5',
@@ -89,6 +93,7 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     model: 'kimi-k2.5',
     baseUrl: 'https://api.moonshot.ai',
     maxTokens: 8192,
+    temperature: 0.6, // mode instant, pas thinking
   },
   {
     id: 'ollama-default',
@@ -98,6 +103,7 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     baseUrl: 'http://localhost:11434',
     maxTokens: 4096,
   },
+  // Claude: temperature par defaut (non specifiee, laissee au provider)
   {
     id: 'claude-sonnet',
     name: 'Claude 4.5 Sonnet',
