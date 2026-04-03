@@ -1,6 +1,7 @@
-import { useEffect, useRef, memo, useMemo, useCallback } from 'react'
+import { useEffect, useRef, memo, useMemo, useCallback, useState } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { extractArtifactBlocks, blockToArtifact } from '../../utils/artifacts'
+import { CopyIcon } from '../icons/Icons'
 
 function formatTimestamp(ts: number): string {
   const d = new Date(ts)
@@ -129,6 +130,15 @@ const MessageItem = memo(function MessageItem({
     [content, role, handlePreview],
   )
 
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }, [content])
+
   return (
     <div className={`message message--${role}`}>
       <div className="message__header">
@@ -138,17 +148,21 @@ const MessageItem = memo(function MessageItem({
         <span className="message__time">{formatTimestamp(timestamp)}</span>
       </div>
       <div className="message__content">{rendered}</div>
+      <button className="message__copy-btn" onClick={handleCopy} title={copied ? 'Copied!' : 'Copy'}>
+        {copied ? '✓' : <CopyIcon size={12} />}
+      </button>
     </div>
   )
 })
 
 export function MessageList() {
   const messages = useChatStore((s) => s.messages)
+  const isStreaming = useChatStore((s) => s.isStreaming)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length])
+  }, [messages.length, isStreaming])
 
   if (messages.length === 0) {
     return (
@@ -171,6 +185,13 @@ export function MessageList() {
           model={msg.model}
         />
       ))}
+      {isStreaming && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && !messages[messages.length - 1].content && (
+        <div className="message message--assistant message--typing">
+          <span className="typing-indicator">
+            <span /><span /><span />
+          </span>
+        </div>
+      )}
       <div ref={bottomRef} />
     </div>
   )

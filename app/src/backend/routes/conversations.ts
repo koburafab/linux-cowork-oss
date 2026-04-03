@@ -6,6 +6,8 @@ import { Hono } from 'hono'
 import {
   saveConversation,
   getConversations,
+  deleteConversation,
+  renameConversation,
   saveMessage,
   getMessages,
 } from '../../core/memory/db'
@@ -77,6 +79,46 @@ export function createConversationRoutes(): Hono {
         model: body.model,
       })
       return c.json({ id }, 201)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return c.json({ error: msg }, 500)
+    }
+  })
+
+  /** Delete a conversation and its messages */
+  app.delete('/conversations/:id', (c) => {
+    try {
+      const id = Number(c.req.param('id'))
+      if (Number.isNaN(id)) {
+        return c.json({ error: 'invalid conversation id' }, 400)
+      }
+      const deleted = deleteConversation(id)
+      if (!deleted) {
+        return c.json({ error: 'conversation not found' }, 404)
+      }
+      return c.json({ ok: true })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return c.json({ error: msg }, 500)
+    }
+  })
+
+  /** Rename a conversation */
+  app.put('/conversations/:id', async (c) => {
+    try {
+      const id = Number(c.req.param('id'))
+      if (Number.isNaN(id)) {
+        return c.json({ error: 'invalid conversation id' }, 400)
+      }
+      const body = await c.req.json<{ title: string }>()
+      if (!body.title) {
+        return c.json({ error: 'title is required' }, 400)
+      }
+      const updated = renameConversation(id, body.title)
+      if (!updated) {
+        return c.json({ error: 'conversation not found' }, 404)
+      }
+      return c.json({ ok: true, title: body.title })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       return c.json({ error: msg }, 500)

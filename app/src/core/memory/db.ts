@@ -178,6 +178,19 @@ export function getConversations(): Conversation[] {
   return d.prepare('SELECT * FROM conversations ORDER BY created_at DESC').all() as Conversation[]
 }
 
+export function deleteConversation(id: number): boolean {
+  const d = getDB()
+  d.prepare('DELETE FROM messages WHERE conversation_id = ?').run(id)
+  const result = d.prepare('DELETE FROM conversations WHERE id = ?').run(id)
+  return (result as { changes: number }).changes > 0
+}
+
+export function renameConversation(id: number, title: string): boolean {
+  const d = getDB()
+  const result = d.prepare('UPDATE conversations SET title = ? WHERE id = ?').run(title, id)
+  return (result as { changes: number }).changes > 0
+}
+
 // --- Messages ---
 
 export function saveMessage(msg: Message): number {

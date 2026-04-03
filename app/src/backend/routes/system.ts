@@ -31,7 +31,15 @@ export function createSystemRoutes(): Hono {
   app.get('/settings', (c) => {
     try {
       const settings = loadSettings()
-      return c.json(settings)
+      // Never expose API keys in responses
+      const safe = {
+        ...settings,
+        anthropicApiKey: settings.anthropicApiKey ? '••••' : '',
+        apiKeys: Object.fromEntries(
+          Object.entries(settings.apiKeys || {}).map(([k, v]) => [k, v ? '••••' : ''])
+        ),
+      }
+      return c.json(safe)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       return c.json({ error: msg }, 500)

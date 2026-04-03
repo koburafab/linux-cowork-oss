@@ -26,7 +26,7 @@ export function createServer(injectedRegistry?: import('./tool-registry').ToolRe
   app.use(
     '*',
     cors({
-      origin: '*',
+      origin: ['http://localhost:1420', 'http://localhost:5173', 'http://localhost:3001', 'tauri://localhost', 'http://0.0.0.0:3001'],
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
     }),
