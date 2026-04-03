@@ -38,7 +38,7 @@
 - [x] **Test E2E complet** — 4/5 workflows PASS, screenshots dans /screenshots/
 
 ## Sprint 2 (a venir)
-- [ ] Workflows templates
+- [x] Workflows templates (6 presets: organize, health, screenshot, files, git, daily)
 - [ ] Plugin marketplace UI
 - [ ] Voice input (whisper)
 - [ ] Connexion Trismegis (bridge Hub M900)

@@ -233,6 +233,35 @@ export async function killAgent(id: string): Promise<{ ok: boolean }> {
   return res.json()
 }
 
+// --- Plugins ---
+
+export interface Plugin {
+  id: string
+  name: string
+  description: string
+  type: 'builtin' | 'skill' | 'mcp'
+  enabled: boolean
+  tools?: string[]
+}
+
+/**
+ * Get all available plugins
+ */
+export async function getPlugins(): Promise<{ plugins: Plugin[] }> {
+  const res = await fetch(`${BACKEND_URL}/api/plugins`)
+  return res.json()
+}
+
+/**
+ * Toggle a plugin on/off
+ */
+export async function togglePlugin(id: string): Promise<{ id: string; enabled: boolean }> {
+  const res = await fetch(`${BACKEND_URL}/api/plugins/${encodeURIComponent(id)}/toggle`, {
+    method: 'POST',
+  })
+  return res.json()
+}
+
 /**
  * Poll /api/status until backend responds — returns true if ready
  */

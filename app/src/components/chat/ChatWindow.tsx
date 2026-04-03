@@ -6,6 +6,7 @@ import { ChatInput } from './ChatInput'
 import { ModelSelector } from './ModelSelector'
 import { AuditPanel } from './AuditPanel'
 import { SettingsPanel } from '../settings/SettingsPanel'
+import { PluginBrowser } from '../plugins/PluginBrowser'
 import { WorkflowGrid } from '../workflows/WorkflowGrid'
 
 /** Throttle: update the store at most every N ms during streaming */
@@ -13,6 +14,7 @@ const RENDER_THROTTLE_MS = 150
 
 export function ChatWindow() {
   const [showSettings, setShowSettings] = useState(false)
+  const [showPlugins, setShowPlugins] = useState(false)
   const addMessage = useChatStore((s) => s.addMessage)
   const activeModel = useChatStore((s) => s.activeModel)
   const setStreaming = useChatStore((s) => s.setStreaming)
@@ -159,6 +161,13 @@ export function ChatWindow() {
         <div className="chat-window__header-controls">
           <ModelSelector />
           <button
+            className="chat-window__plugins-btn"
+            onClick={() => setShowPlugins((v) => !v)}
+            title="Plugins"
+          >
+            🧩
+          </button>
+          <button
             className="chat-window__settings-btn"
             onClick={() => setShowSettings((v) => !v)}
             title="Settings"
@@ -175,6 +184,7 @@ export function ChatWindow() {
       <ChatInput onSend={handleSend} />
       <AuditPanel />
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      {showPlugins && <PluginBrowser onClose={() => setShowPlugins(false)} />}
     </div>
   )
 }
