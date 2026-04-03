@@ -39,7 +39,7 @@
 
 ## Sprint 2 (a venir)
 - [x] Workflows templates (6 presets: organize, health, screenshot, files, git, daily)
-- [ ] Plugin marketplace UI
+- [x] Plugin marketplace UI (18 built-in + skills browser + toggle)
 - [ ] Voice input (whisper)
 - [ ] Connexion Trismegis (bridge Hub M900)
 - [ ] Publish GitHub
