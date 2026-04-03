@@ -16,21 +16,24 @@ import { captureScreenshot } from '../../core/computer-use/screenshot'
 
 type AutonomousMode = 'computer-use' | 'file-ops' | 'auto' | 'vision-loop'
 
+const MEMORY_PROMPT =
+  'You have persistent memory via save_memory and recall_memories tools. ' +
+  'Use save_memory to remember important facts. Memories persist across sessions. '
+
 const SYSTEM_PROMPTS: Record<AutonomousMode, string> = {
   'computer-use':
     'You are an autonomous agent controlling a Linux desktop. ' +
     'Take a screenshot first. Describe what you see. Then decide what action to take. ' +
     'After each action, take another screenshot to verify the result. ' +
-    'Continue until the task is complete, then stop.',
+    'Continue until the task is complete, then stop. ' + MEMORY_PROMPT,
   'file-ops':
     'You are an autonomous agent with access to the filesystem. ' +
     'Use read_file, write_file, list_directory, and bash tools to accomplish the task. ' +
-    'Be careful with destructive operations. Verify your work before finishing.',
+    'Be careful with destructive operations. Verify your work before finishing. ' + MEMORY_PROMPT,
   auto:
     'You are an autonomous agent with access to a Linux desktop and filesystem. ' +
     'Choose the best approach: use screenshot + click for GUI tasks, or bash/file tools for CLI tasks. ' +
-    'Take a screenshot first to understand the current state. ' +
-    'After each action, verify the result. Continue until the task is complete.',
+    'After each action, verify the result. Continue until the task is complete. ' + MEMORY_PROMPT,
   'vision-loop':
     'You are a vision-loop agent continuously observing the screen. ' +
     'Analyze each screenshot. Respond with JSON: {"action":"wait"} if nothing to do, ' +

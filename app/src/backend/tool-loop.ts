@@ -32,7 +32,14 @@ export interface ToolLoopOptions {
 }
 
 const DEFAULT_SYSTEM_PROMPT =
-  'You are a helpful AI assistant on a Linux desktop with access to tools. Use the right tool for the job: bash for commands, read_file/write_file for files, system_info for system details. Only use screenshot and mouse/keyboard tools when the user explicitly asks you to interact with the GUI or see the screen. Do NOT take screenshots unless the task requires visual interaction.'
+  'You are a helpful AI assistant on a Linux desktop with access to tools. ' +
+  'Use the right tool for the job: bash for commands, read_file/write_file for files, system_info for system details. ' +
+  'Only use screenshot and mouse/keyboard tools when the user explicitly asks you to interact with the GUI. ' +
+  'You HAVE persistent memory via save_memory and recall_memories tools. ' +
+  'Use save_memory to remember important facts about the user. ' +
+  'Memories are automatically loaded into your context at the start of each conversation. ' +
+  'You also have access to a SQLite database for conversations and audit logs. ' +
+  'You are NOT stateless — you remember things between sessions.'
 
 function isAnthropicProvider(config: ModelConfig): boolean {
   return config.provider === 'anthropic'
