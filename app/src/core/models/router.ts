@@ -5,6 +5,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import type { ModelConfig, ChatMessage, StreamChunk, ModelResponse, ToolDefinition } from './types'
+import { tokenTracker } from '../../backend/token-tracker'
 
 export class ModelRouter {
   private anthropicClients: Map<string, Anthropic> = new Map()
@@ -82,6 +83,8 @@ export class ModelRouter {
       .map((block) => block.text)
       .join('')
 
+    tokenTracker.record(config.model, response.usage.input_tokens, response.usage.output_tokens)
+
     return {
       content: text,
       model: response.model,
@@ -117,6 +120,7 @@ export class ModelRouter {
     let currentToolName = ''
     let currentToolUseId = ''
     let currentToolInputJson = ''
+    let streamUsage: { inputTokens: number; outputTokens: number } | undefined
 
     for await (const event of stream) {
       if (event.type === 'content_block_start') {
@@ -153,10 +157,30 @@ export class ModelRouter {
         currentToolName = ''
         currentToolUseId = ''
         currentToolInputJson = ''
+      } else if (event.type === 'message_delta') {
+        const delta = event as unknown as { usage?: { output_tokens: number } }
+        if (delta.usage) {
+          streamUsage = {
+            inputTokens: streamUsage?.inputTokens ?? 0,
+            outputTokens: delta.usage.output_tokens,
+          }
+        }
+      } else if (event.type === 'message_start') {
+        const msg = (event as unknown as { message?: { usage?: { input_tokens: number; output_tokens: number } } }).message
+        if (msg?.usage) {
+          streamUsage = {
+            inputTokens: msg.usage.input_tokens,
+            outputTokens: msg.usage.output_tokens,
+          }
+        }
       }
     }
 
-    yield { type: 'done', content: '' }
+    if (streamUsage) {
+      tokenTracker.record(config.model, streamUsage.inputTokens, streamUsage.outputTokens)
+    }
+
+    yield { type: 'done', content: '', usage: streamUsage }
   }
 
   private formatForAnthropic(messages: ChatMessage[]): {
@@ -282,6 +306,10 @@ export class ModelRouter {
       usage?: { prompt_tokens: number; completion_tokens: number }
     }
 
+    if (data.usage) {
+      tokenTracker.record(config.model, data.usage.prompt_tokens, data.usage.completion_tokens)
+    }
+
     return {
       content: data.choices[0]?.message?.content || '',
       model: data.model,
@@ -308,6 +336,7 @@ export class ModelRouter {
       max_tokens: config.maxTokens || 4096,
       temperature: config.temperature,
       stream: true,
+      stream_options: { include_usage: true },
     }
 
     if (tools && tools.length > 0) {
@@ -336,6 +365,7 @@ export class ModelRouter {
 
     const decoder = new TextDecoder()
     let buffer = ''
+    let streamUsage: { inputTokens: number; outputTokens: number } | undefined
 
     // Accumulate tool calls across streaming deltas
     // OpenAI streams tool_calls as: delta.tool_calls[{index, id?, function:{name?, arguments?}}]
@@ -369,7 +399,10 @@ export class ModelRouter {
               toolUseId: tc.id,
             }
           }
-          yield { type: 'done', content: '' }
+          if (streamUsage) {
+            tokenTracker.record(config.model, streamUsage.inputTokens, streamUsage.outputTokens)
+          }
+          yield { type: 'done', content: '', usage: streamUsage }
           return
         }
         try {
@@ -385,6 +418,15 @@ export class ModelRouter {
               }
               finish_reason?: string | null
             }>
+            usage?: { prompt_tokens: number; completion_tokens: number }
+          }
+
+          // Capture usage if present (often in the last chunk)
+          if (parsed.usage) {
+            streamUsage = {
+              inputTokens: parsed.usage.prompt_tokens,
+              outputTokens: parsed.usage.completion_tokens,
+            }
           }
 
           const delta = parsed.choices[0]?.delta
@@ -451,7 +493,10 @@ export class ModelRouter {
       }
     }
 
-    yield { type: 'done', content: '' }
+    if (streamUsage) {
+      tokenTracker.record(config.model, streamUsage.inputTokens, streamUsage.outputTokens)
+    }
+    yield { type: 'done', content: '', usage: streamUsage }
   }
 }
 

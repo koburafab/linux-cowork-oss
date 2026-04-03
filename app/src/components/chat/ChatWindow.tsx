@@ -5,6 +5,7 @@ import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { ModelSelector } from './ModelSelector'
 import { AuditPanel } from './AuditPanel'
+import { TokenCounter } from './TokenCounter'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { PluginBrowser } from '../plugins/PluginBrowser'
 import { WorkflowGrid } from '../workflows/WorkflowGrid'
@@ -182,7 +183,10 @@ export function ChatWindow() {
         <MessageList />
       )}
       <ChatInput onSend={handleSend} />
-      <AuditPanel />
+      <div className="chat-window__footer">
+        <TokenCounter />
+        <AuditPanel />
+      </div>
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showPlugins && <PluginBrowser onClose={() => setShowPlugins(false)} />}
     </div>

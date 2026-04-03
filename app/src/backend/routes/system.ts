@@ -7,6 +7,7 @@ import { coworkApp } from '../../core/integration'
 import { loadSettings, saveSettings, type Settings } from '../../core/settings'
 import { getRecentAudit } from '../../core/audit'
 import { FileHistoryManager } from '../../core/file-history'
+import { tokenTracker } from '../token-tracker'
 
 export const fileHistoryManager = new FileHistoryManager()
 
@@ -53,6 +54,12 @@ export function createSystemRoutes(): Hono {
       const msg = err instanceof Error ? err.message : String(err)
       return c.json({ error: msg }, 500)
     }
+  })
+
+  // --- Token usage ---
+
+  app.get('/tokens', (c) => {
+    return c.json(tokenTracker.toJSON())
   })
 
   // --- File history / undo ---

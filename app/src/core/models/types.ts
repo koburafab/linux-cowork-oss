@@ -37,6 +37,7 @@ export interface StreamChunk {
   toolName?: string
   toolInput?: Record<string, unknown>
   toolUseId?: string
+  usage?: { inputTokens: number; outputTokens: number }
 }
 
 export type ContentBlock =

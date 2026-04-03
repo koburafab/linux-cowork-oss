@@ -118,6 +118,28 @@ export async function getAudit(): Promise<Record<string, unknown>[]> {
   return res.json()
 }
 
+/**
+ * Get token usage stats
+ */
+export interface TokenUsageStats {
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalCost: number
+  byModel: Record<string, { tokens: number; cost: number }>
+  recent: Array<{
+    model: string
+    inputTokens: number
+    outputTokens: number
+    cost: number
+    timestamp: number
+  }>
+}
+
+export async function getTokenUsage(): Promise<TokenUsageStats> {
+  const res = await fetch(`${BACKEND_URL}/api/tokens`)
+  return res.json()
+}
+
 // --- Workflows ---
 
 export interface Workflow {
