@@ -2,8 +2,9 @@
  * ArtifactViewer — renders HTML/SVG/Mermaid/code artifacts in the Agent panel
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useChatStore } from '../../stores/chatStore'
+import { openFile } from '../../api/client'
 import type { Artifact } from '../../stores/chatStore'
 
 function copyToClipboard(text: string) {
@@ -61,22 +62,34 @@ function CodeRenderer({ artifact }: { artifact: Artifact }) {
 export function ArtifactViewer() {
   const artifact = useChatStore((s) => s.currentArtifact)
   const clearArtifact = useChatStore((s) => s.clearArtifact)
+  const [fullscreen, setFullscreen] = useState(false)
 
-  const handleOpenInBrowser = useCallback(() => {
+  const handleOpenInBrowser = useCallback(async () => {
     if (!artifact) return
-    // Create a blob URL and open it — works without filesystem access
-    const mimeType = artifact.type === 'svg' ? 'image/svg+xml' : 'text/html'
-    const blob = new Blob([artifact.content], { type: mimeType })
-    const url = URL.createObjectURL(blob)
-    window.open(url, '_blank')
-    // Revoke after a delay so the browser has time to load
-    setTimeout(() => URL.revokeObjectURL(url), 5000)
+    const ext = artifact.type === 'svg' ? 'svg' : 'html'
+    const filename = `artifact-${Date.now()}.${ext}`
+    try {
+      await openFile(artifact.content, filename)
+    } catch {
+      // Fallback: noop
+    }
+  }, [artifact])
+
+  const handleDetach = useCallback(async () => {
+    if (!artifact) return
+    const ext = artifact.type === 'svg' ? 'svg' : 'html'
+    const filename = `artifact-${Date.now()}.${ext}`
+    try {
+      await openFile(artifact.content, filename)
+    } catch {
+      // Fallback: noop
+    }
   }, [artifact])
 
   if (!artifact) return null
 
   return (
-    <div className="artifact-viewer">
+    <div className={`artifact-viewer${fullscreen ? ' artifact-viewer--fullscreen' : ''}`}>
       <div className="artifact-viewer__header">
         <span className="artifact-viewer__title">
           {artifact.title ?? `${artifact.type} preview`}
@@ -103,12 +116,26 @@ export function ArtifactViewer() {
               className="artifact-viewer__btn"
               onClick={handleOpenInBrowser}
             >
-              Open in browser
+              Open
+            </button>
+          )}
+          {(artifact.type === 'html' || artifact.type === 'svg') && (
+            <button
+              className="artifact-viewer__btn"
+              onClick={handleDetach}
+            >
+              Detach
             </button>
           )}
           <button
+            className="artifact-viewer__btn"
+            onClick={() => setFullscreen((v) => !v)}
+          >
+            {fullscreen ? 'Restore' : 'Fullscreen'}
+          </button>
+          <button
             className="artifact-viewer__btn artifact-viewer__btn--close"
-            onClick={clearArtifact}
+            onClick={() => { setFullscreen(false); clearArtifact() }}
           >
             Close
           </button>

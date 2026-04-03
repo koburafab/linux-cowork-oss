@@ -285,6 +285,18 @@ export async function togglePlugin(id: string): Promise<{ id: string; enabled: b
 }
 
 /**
+ * Open file content in the default browser via backend (xdg-open)
+ */
+export async function openFile(content: string, filename?: string): Promise<{ ok: boolean; path?: string; error?: string }> {
+  const res = await fetch(`${BACKEND_URL}/api/open-file`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, filename }),
+  })
+  return res.json()
+}
+
+/**
  * Poll /api/status until backend responds — returns true if ready
  */
 export async function waitForBackend(maxRetries = 30, intervalMs = 500): Promise<boolean> {

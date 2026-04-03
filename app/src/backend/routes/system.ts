@@ -1,8 +1,12 @@
 /**
- * System routes — status, settings, audit, file-history/undo
+ * System routes — status, settings, audit, file-history/undo, open-file
  */
 
 import { Hono } from 'hono'
+import { execSync } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { coworkApp } from '../../core/integration'
 import { loadSettings, saveSettings, type Settings } from '../../core/settings'
 import { getRecentAudit } from '../../core/audit'
@@ -75,6 +79,25 @@ export function createSystemRoutes(): Hono {
         return c.json({ error: 'No history for this file' }, 404)
       }
       return c.json({ ok: true, snapshot: snap })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return c.json({ error: msg }, 500)
+    }
+  })
+
+  // --- Open file in default browser ---
+
+  app.post('/open-file', async (c) => {
+    try {
+      const body = await c.req.json<{ content: string; filename?: string }>()
+      if (!body.content || typeof body.content !== 'string') {
+        return c.json({ error: 'content is required' }, 400)
+      }
+      const filename = body.filename ?? `artifact-${Date.now()}.html`
+      const filePath = join(tmpdir(), filename)
+      writeFileSync(filePath, body.content, 'utf-8')
+      execSync(`xdg-open "${filePath}"`)
+      return c.json({ ok: true, path: filePath })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       return c.json({ error: msg }, 500)

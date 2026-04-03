@@ -13,7 +13,7 @@ import type { AgentInfo } from '../../api/client'
 const FILE_MODIFYING_TOOLS = new Set(['write_file', 'edit_file'])
 
 export function AgentPanel() {
-  const [visible, setVisible] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
   const [undoStates, setUndoStates] = useState<Record<string, 'idle' | 'undone'>>({})
   const [screenshotPulse, setScreenshotPulse] = useState(false)
   const lastScreenshotTs = useRef<number>(0)
@@ -87,11 +87,12 @@ export function AgentPanel() {
     }
   }
 
-  if (!visible) {
+  if (collapsed) {
     return (
-      <button className="agent-panel__show-btn" onClick={() => setVisible(true)}>
-        Agent
-      </button>
+      <div className="agent-panel agent-panel--collapsed" onClick={() => setCollapsed(false)}>
+        <span className="agent-panel__collapsed-label">AGENT</span>
+        <span className="agent-panel__collapsed-arrow">{'\u25C0'}</span>
+      </div>
     )
   }
 
@@ -115,10 +116,11 @@ export function AgentPanel() {
             Clear
           </button>
           <button
-            className="agent-panel__hide-btn"
-            onClick={() => setVisible(false)}
+            className="agent-panel__collapse-btn"
+            onClick={() => setCollapsed(true)}
+            title="Collapse panel"
           >
-            Hide
+            {'\u25B6'}
           </button>
         </div>
       </div>
