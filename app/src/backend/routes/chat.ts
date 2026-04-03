@@ -27,7 +27,7 @@ function resolveModelConfig(body: { model?: string }): ModelConfig {
     config.apiKey = keys.anthropic || settings.anthropicApiKey || ''
   } else if (config.baseUrl?.includes('deepseek.com')) {
     config.apiKey = keys.deepseek || ''
-  } else if (config.baseUrl?.includes('moonshot.cn')) {
+  } else if (config.baseUrl?.includes('moonshot.ai') || config.baseUrl?.includes('moonshot.cn')) {
     config.apiKey = keys.moonshot || ''
   } else if (config.baseUrl?.includes('openrouter.ai')) {
     config.apiKey = keys.openrouter || ''

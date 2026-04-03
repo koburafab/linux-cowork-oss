@@ -206,9 +206,23 @@ export class ModelRouter {
     messages: ChatMessage[],
   ): Array<Record<string, unknown>> {
     return messages.map((m) => {
+      // For vision: if content is a JSON string containing image_url, parse it back to array
+      let content: unknown = m.content
+      if (typeof m.content === 'string') {
+        try {
+          const parsed = JSON.parse(m.content)
+          if (Array.isArray(parsed) && parsed.some((p: Record<string, unknown>) => p.type === 'image_url')) {
+            content = parsed // Keep as array for vision models
+          }
+        } catch {
+          // Not JSON, keep as string
+        }
+      } else if (Array.isArray(m.content)) {
+        content = m.content
+      }
       const msg: Record<string, unknown> = {
         role: m.role,
-        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+        content,
       }
       if (m.role === 'tool' && m.tool_call_id) {
         msg.tool_call_id = m.tool_call_id

@@ -83,10 +83,10 @@ export const DEFAULT_MODELS: ModelConfig[] = [
   },
   {
     id: 'kimi-k2',
-    name: 'Kimi K2',
+    name: 'Kimi K2.5',
     provider: 'openai-compatible',
-    model: 'kimi-k2',
-    baseUrl: 'https://api.moonshot.cn',
+    model: 'kimi-k2.5',
+    baseUrl: 'https://api.moonshot.ai',
     maxTokens: 8192,
   },
   {

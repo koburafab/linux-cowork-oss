@@ -164,6 +164,32 @@ export async function* toolUseLoop(
 
         yield { type: 'tool_result', name: call.toolName, result }
 
+        // For screenshot results with images, inject the image directly
+        // so vision models (Kimi K2.5, Claude) can actually see it
+        if (call.toolName === 'screenshot' && Array.isArray(result)) {
+          const imgBlock = result.find(
+            (b): b is ContentBlock & { type: 'image' } => b.type === 'image',
+          )
+          if (imgBlock && imgBlock.type === 'image' && !isAnthropic) {
+            // OpenAI vision format: add image as user message
+            messages.push({
+              role: 'tool',
+              content: 'Screenshot captured. See image below.',
+              tool_call_id: call.toolUseId,
+              timestamp: Date.now(),
+            })
+            messages.push({
+              role: 'user',
+              content: JSON.stringify([
+                { type: 'text', text: 'Here is the screenshot. Describe what you see and decide what to do next.' },
+                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imgBlock.source.data}` } },
+              ]),
+              timestamp: Date.now(),
+            })
+            continue // skip normal appendToolResult
+          }
+        }
+
         // Format the result for the next model call
         const resultStr =
           typeof result === 'string' ? result : JSON.stringify(result)

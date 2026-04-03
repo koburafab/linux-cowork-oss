@@ -69,7 +69,7 @@ export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
       modelConfig.apiKey = keys.anthropic || settings.anthropicApiKey || ''
     } else if (modelConfig.baseUrl?.includes('deepseek.com')) {
       modelConfig.apiKey = keys.deepseek || ''
-    } else if (modelConfig.baseUrl?.includes('moonshot.cn')) {
+    } else if (modelConfig.baseUrl?.includes('moonshot.ai') || modelConfig.baseUrl?.includes('moonshot.cn')) {
       modelConfig.apiKey = keys.moonshot || ''
     } else if (modelConfig.baseUrl?.includes('openrouter.ai')) {
       modelConfig.apiKey = keys.openrouter || ''
@@ -182,7 +182,7 @@ export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
       modelConfig.apiKey = keys.anthropic || settings.anthropicApiKey || ''
     } else if (modelConfig.baseUrl?.includes('deepseek.com')) {
       modelConfig.apiKey = keys.deepseek || ''
-    } else if (modelConfig.baseUrl?.includes('moonshot.cn')) {
+    } else if (modelConfig.baseUrl?.includes('moonshot.ai') || modelConfig.baseUrl?.includes('moonshot.cn')) {
       modelConfig.apiKey = keys.moonshot || ''
     } else if (modelConfig.baseUrl?.includes('openrouter.ai')) {
       modelConfig.apiKey = keys.openrouter || ''
