@@ -22,6 +22,24 @@ fn find_server_script() -> Option<String> {
     None
 }
 
+fn find_bun() -> String {
+    // Check common bun locations — desktop launchers often miss ~/.bun/bin in PATH
+    let home = std::env::var("HOME").unwrap_or_default();
+    let candidates = [
+        format!("{}/.bun/bin/bun", home),
+        "/usr/local/bin/bun".to_string(),
+        "/usr/bin/bun".to_string(),
+        "bun".to_string(), // fallback to PATH
+    ];
+
+    for path in &candidates {
+        if path == "bun" || std::path::Path::new(path).exists() {
+            return path.clone();
+        }
+    }
+    "bun".to_string()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -36,7 +54,9 @@ pub fn run() {
 
             // Find and spawn the Bun backend sidecar
             if let Some(script_path) = find_server_script() {
-                let child = Command::new("bun")
+                let bun_path = find_bun();
+                log::info!("Starting backend: {} run {}", bun_path, script_path);
+                let child = Command::new(&bun_path)
                     .arg("run")
                     .arg(&script_path)
                     .stdout(std::process::Stdio::piped())

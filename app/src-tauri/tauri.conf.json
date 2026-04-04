@@ -7,8 +7,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "bun run dev",
-    "beforeBuildCommand": "bun run build"
+    "beforeDevCommand": "bunx --bun vite",
+    "beforeBuildCommand": "bunx --bun vite build"
   },
   "app": {
     "windows": [

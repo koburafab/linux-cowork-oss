@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "bunx --bun vite",
     "build": "bunx --bun vite build",
     "lint": "bunx biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview",
+    "preview": "bunx --bun vite preview",
     "tauri": "tauri"
   },
   "dependencies": {
