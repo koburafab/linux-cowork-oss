@@ -15,6 +15,23 @@ export type SSEEvent =
   | { type: 'done' }
 
 /**
+ * Record the microphone and transcribe it to text (POST /api/voice/transcribe).
+ */
+export async function transcribeVoice(seconds = 5): Promise<string> {
+  const res = await fetch(`${BACKEND_URL}/api/voice/transcribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ seconds }),
+  })
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string }
+    throw new Error(err.error || `Backend error: ${res.status}`)
+  }
+  const data = (await res.json()) as { text?: string }
+  return data.text || ''
+}
+
+/**
  * Stream chat via SSE — POST to /api/chat, yields parsed events
  */
 export async function* streamChat(message: string, options?: { useTools?: boolean }): AsyncGenerator<SSEEvent> {

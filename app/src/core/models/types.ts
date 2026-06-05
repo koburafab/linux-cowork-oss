@@ -95,6 +95,36 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     maxTokens: 8192,
     temperature: 0.6, // mode instant, pas thinking
   },
+  // OpenAI GPT-5 — vision native, necessite la cle OpenAI
+  {
+    id: 'gpt-5.5',
+    name: 'GPT-5.5',
+    provider: 'openai-compatible',
+    model: 'gpt-5.5',
+    baseUrl: 'https://api.openai.com',
+    maxTokens: 8192,
+    temperature: 0.3,
+  },
+  {
+    // mini taille pour coding / computer-use / subagents — ideal pour cette app
+    id: 'gpt-5.4-mini',
+    name: 'GPT-5.4 mini',
+    provider: 'openai-compatible',
+    model: 'gpt-5.4-mini',
+    baseUrl: 'https://api.openai.com',
+    maxTokens: 8192,
+    temperature: 0.3,
+  },
+  {
+    // le moins cher de la classe GPT-5.4, pour le volume
+    id: 'gpt-5.4-nano',
+    name: 'GPT-5.4 nano',
+    provider: 'openai-compatible',
+    model: 'gpt-5.4-nano',
+    baseUrl: 'https://api.openai.com',
+    maxTokens: 8192,
+    temperature: 0.3,
+  },
   {
     id: 'ollama-default',
     name: 'Ollama Local (1B)',

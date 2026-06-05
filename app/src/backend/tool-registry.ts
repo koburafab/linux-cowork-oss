@@ -14,8 +14,11 @@ import {
 } from '../core/computer-use/input'
 import { readFile, writeFile, listDir } from '../core/file-access'
 import { execSync } from 'node:child_process'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import os from 'node:os'
 import { saveMemory, getMemories } from '../core/memory/db'
+import { loadSettings } from '../core/settings'
 
 export type ToolExecutor = (
   input: Record<string, unknown>,
@@ -626,7 +629,269 @@ export function createDefaultRegistry(): ToolRegistry {
     },
   })
 
+  // --- OpenAI-powered tools (voice, vision, image generation) ---
+
+  registry.register({
+    definition: {
+      name: 'voice_transcribe',
+      description:
+        'Record audio from the microphone for a few seconds and transcribe it to text (speech-to-text via OpenAI Whisper). Returns the transcribed text.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          seconds: {
+            type: 'number',
+            description: 'How many seconds to record (default 5, max 60)',
+          },
+        },
+        required: [],
+      },
+    },
+    executor: async (input) => {
+      const key = getOpenAIKey()
+      if (!key) return 'Error: no OpenAI API key set (Settings → OpenAI API Key).'
+      const seconds = Math.min(Math.max((input.seconds as number) || 5, 1), 60)
+      const wav = join(os.tmpdir(), `cowork-rec-${Date.now()}.wav`)
+      try {
+        recordAudio(wav, seconds)
+        if (!existsSync(wav)) return 'Error: recording failed (no audio file produced).'
+        const text = await openAITranscribe(wav, key)
+        return text || '[no speech detected]'
+      } catch (err: unknown) {
+        const e = err as { message?: string }
+        return `Error transcribing: ${e.message || 'unknown error'}`
+      } finally {
+        try {
+          execSync(`rm -f "${wav}"`, { timeout: 5_000 })
+        } catch {
+          // ignore
+        }
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'describe_image',
+      description:
+        'Look at an image and describe it using a vision model (OpenAI GPT-4o). ' +
+        'If no path is given, it captures the current screen first — use this to "see" the screen when the active chat model has no vision.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'Optional path to an image file. If omitted, the screen is captured.',
+          },
+          prompt: {
+            type: 'string',
+            description: 'What to focus on (default: describe everything visible).',
+          },
+        },
+        required: [],
+      },
+    },
+    executor: async (input) => {
+      const key = getOpenAIKey()
+      if (!key) return 'Error: no OpenAI API key set (Settings → OpenAI API Key).'
+      try {
+        let base64: string
+        if (input.path) {
+          const p = input.path as string
+          if (!existsSync(p)) return `Error: file not found: ${p}`
+          base64 = readFileSync(p).toString('base64')
+        } else {
+          const shot = await captureScreenshot({ mode: 'fullscreen', maxWidth: 1280, quality: 60 })
+          base64 = shot.base64 || ''
+        }
+        if (!base64) return 'Error: could not obtain image data.'
+        const prompt =
+          (input.prompt as string) ||
+          'Describe what is visible in this image in detail. If it is a screen, list the apps, windows and any readable text.'
+        return await openAIDescribeImage(base64, prompt, key)
+      } catch (err: unknown) {
+        const e = err as { message?: string }
+        return `Error describing image: ${e.message || 'unknown error'}`
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'generate_image',
+      description:
+        'Generate an image from a text prompt (OpenAI gpt-image-2). Saves a PNG file and returns its path.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'Description of the image to generate' },
+          size: {
+            type: 'string',
+            enum: ['1024x1024', '1024x1536', '1536x1024'],
+            description: 'Image size (default 1024x1024)',
+          },
+        },
+        required: ['prompt'],
+      },
+    },
+    executor: async (input) => {
+      const key = getOpenAIKey()
+      if (!key) return 'Error: no OpenAI API key set (Settings → OpenAI API Key).'
+      try {
+        const size = (input.size as string) || '1024x1024'
+        const b64 = await openAIGenerateImage(input.prompt as string, size, key)
+        const outDir = join(os.homedir(), 'Pictures')
+        const outPath = join(
+          existsSync(outDir) ? outDir : os.tmpdir(),
+          `cowork-image-${Date.now()}.png`,
+        )
+        writeFileSync(outPath, Buffer.from(b64, 'base64'))
+        return `Image generated and saved to: ${outPath}`
+      } catch (err: unknown) {
+        const e = err as { message?: string }
+        return `Error generating image: ${e.message || 'unknown error'}`
+      }
+    },
+  })
+
   return registry
+}
+
+/** Read the OpenAI API key from settings, falling back to the environment. */
+function getOpenAIKey(): string {
+  try {
+    const k = loadSettings().apiKeys?.openai
+    if (k) return k
+  } catch {
+    // settings not available
+  }
+  return process.env.OPENAI_API_KEY || ''
+}
+
+/**
+ * Record `seconds` of mono 16 kHz audio to `outPath`.
+ * Prefers PipeWire (pw-record), falls back to ffmpeg.
+ */
+function recordAudio(outPath: string, seconds: number): void {
+  if (hasBin('pw-record')) {
+    execSync(
+      `timeout ${seconds}s pw-record --rate 16000 --channels 1 "${outPath}" || true`,
+      { timeout: (seconds + 5) * 1000, stdio: 'pipe' },
+    )
+    return
+  }
+  if (hasBin('ffmpeg')) {
+    execSync(
+      `ffmpeg -y -f pulse -i default -t ${seconds} -ar 16000 -ac 1 "${outPath}"`,
+      { timeout: (seconds + 5) * 1000, stdio: 'pipe' },
+    )
+    return
+  }
+  throw new Error('no audio recorder found (need pw-record or ffmpeg)')
+}
+
+function hasBin(cmd: string): boolean {
+  try {
+    execSync(`which ${cmd}`, { stdio: 'pipe', timeout: 5_000 })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Transcribe an audio file via OpenAI's Whisper endpoint. */
+async function openAITranscribe(wavPath: string, key: string): Promise<string> {
+  const buf = readFileSync(wavPath)
+  const form = new FormData()
+  form.append('file', new Blob([buf], { type: 'audio/wav' }), 'audio.wav')
+  form.append('model', 'gpt-4o-transcribe')
+  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}` },
+    body: form,
+    signal: AbortSignal.timeout(60_000),
+  })
+  if (!res.ok) {
+    throw new Error(`Whisper API ${res.status}: ${await res.text()}`)
+  }
+  const data = (await res.json()) as { text?: string }
+  return (data.text || '').trim()
+}
+
+/** Describe a base64 image via OpenAI's vision (chat completions) endpoint. */
+async function openAIDescribeImage(
+  base64: string,
+  prompt: string,
+  key: string,
+): Promise<string> {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-5.4-mini',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            {
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${base64}` },
+            },
+          ],
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(60_000),
+  })
+  if (!res.ok) {
+    throw new Error(`Vision API ${res.status}: ${await res.text()}`)
+  }
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>
+  }
+  return data.choices?.[0]?.message?.content || '[no description returned]'
+}
+
+/** Generate an image via OpenAI's image endpoint, returns base64 PNG. */
+async function openAIGenerateImage(
+  prompt: string,
+  size: string,
+  key: string,
+): Promise<string> {
+  const res = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-image-2',
+      prompt,
+      size,
+      n: 1,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  })
+  if (!res.ok) {
+    throw new Error(`Image API ${res.status}: ${await res.text()}`)
+  }
+  const data = (await res.json()) as {
+    data?: Array<{ b64_json?: string; url?: string }>
+  }
+  const first = data.data?.[0]
+  if (first?.b64_json) return first.b64_json
+  if (first?.url) {
+    // Some models return a URL instead of base64 — fetch and re-encode.
+    const img = await fetch(first.url, { signal: AbortSignal.timeout(60_000) })
+    const buf = Buffer.from(await img.arrayBuffer())
+    return buf.toString('base64')
+  }
+  throw new Error('image API returned no image data')
 }
 
 const WEB_USER_AGENT =

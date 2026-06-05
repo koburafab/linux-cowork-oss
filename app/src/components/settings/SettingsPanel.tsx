@@ -8,6 +8,7 @@ interface SettingsData {
     moonshot: string
     anthropic: string
     openrouter: string
+    openai: string
   }
   model: string
   advanced: {
@@ -19,7 +20,7 @@ interface SettingsData {
 }
 
 const EMPTY_SETTINGS: SettingsData = {
-  apiKeys: { deepseek: '', moonshot: '', anthropic: '', openrouter: '' },
+  apiKeys: { deepseek: '', moonshot: '', anthropic: '', openrouter: '', openai: '' },
   model: '',
   advanced: {
     ollamaUrl: 'http://localhost:11434',
@@ -34,6 +35,7 @@ const API_KEY_FIELDS = [
   { key: 'moonshot' as const, label: 'Moonshot (Kimi) API Key', models: 'Kimi K2' },
   { key: 'anthropic' as const, label: 'Anthropic API Key', models: 'Claude Sonnet/Haiku' },
   { key: 'openrouter' as const, label: 'OpenRouter API Key', models: 'OpenRouter models' },
+  { key: 'openai' as const, label: 'OpenAI API Key', models: 'GPT-5.5 · Transcribe (voix) · Vision · GPT Image 2' },
 ]
 
 interface Props {

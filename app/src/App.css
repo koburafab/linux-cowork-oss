@@ -114,13 +114,13 @@
   border-radius: 4px;
   background: transparent;
   color: var(--text);
-  opacity: 0;
+  opacity: 0.35;
   cursor: pointer;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 
 .sidebar__item:hover .sidebar__delete-btn {
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .sidebar__delete-btn:hover {
@@ -763,6 +763,44 @@
 .chat-input__send:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.chat-input__icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted, var(--text));
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, opacity 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.chat-input__icon-btn:hover:not(:disabled) {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.chat-input__icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chat-input__icon-btn--recording {
+  color: #f87171;
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.15);
+  animation: pulse-rec 1s ease-in-out infinite;
+}
+
+@keyframes pulse-rec {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* ── Model Selector ── */

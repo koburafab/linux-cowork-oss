@@ -12,6 +12,7 @@ export interface ApiKeys {
   deepseek?: string
   moonshot?: string
   openrouter?: string
+  openai?: string
   [key: string]: string | undefined
 }
 

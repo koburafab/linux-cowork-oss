@@ -31,6 +31,8 @@ function resolveModelConfig(body: { model?: string }): ModelConfig {
     config.apiKey = keys.moonshot || ''
   } else if (config.baseUrl?.includes('openrouter.ai')) {
     config.apiKey = keys.openrouter || ''
+  } else if (config.baseUrl?.includes('openai.com')) {
+    config.apiKey = keys.openai || ''
   }
 
   return config

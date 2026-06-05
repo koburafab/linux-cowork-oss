@@ -15,6 +15,7 @@ import { createAgentRoutes } from './routes/agents'
 import { createWorkflowRoutes } from './routes/workflows'
 import { createPluginRoutes } from './routes/plugins'
 import { createMcpRoutes } from './routes/mcp'
+import { createVoiceRoutes } from './routes/voice'
 import { createDefaultRegistry } from './tool-registry'
 import { connectMcpServers } from './mcp-bridge'
 import { DEFAULT_MODELS } from '../core/models/types'
@@ -46,6 +47,7 @@ export function createServer(injectedRegistry?: import('./tool-registry').ToolRe
   app.route('/api', createWorkflowRoutes())
   app.route('/api', createPluginRoutes())
   app.route('/api', createMcpRoutes())
+  app.route('/api', createVoiceRoutes(toolRegistry))
 
   // Health check
   app.get('/health', (c) => c.json({ ok: true }))
