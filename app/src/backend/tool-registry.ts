@@ -553,7 +553,253 @@ export function createDefaultRegistry(): ToolRegistry {
     },
   })
 
+  // --- Web access ---
+
+  registry.register({
+    definition: {
+      name: 'web_search',
+      description:
+        'Search the web and return a list of result titles, URLs and snippets. Use this to find current information, then use web_fetch to read a specific result.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          count: {
+            type: 'number',
+            description: 'Max number of results to return (default 5, max 10)',
+          },
+        },
+        required: ['query'],
+      },
+    },
+    executor: async (input) => {
+      const query = (input.query as string).trim()
+      if (!query) return 'Error: empty query'
+      const count = Math.min(Math.max((input.count as number) || 5, 1), 10)
+      try {
+        const results = await webSearch(query, count)
+        if (results.length === 0) {
+          return `No results found for "${query}".`
+        }
+        return results
+          .map(
+            (r, i) =>
+              `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.snippet}`,
+          )
+          .join('\n\n')
+      } catch (err: unknown) {
+        const e = err as { message?: string }
+        return `Error searching the web: ${e.message || 'unknown error'}`
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: 'web_fetch',
+      description:
+        'Fetch a web page by URL and return its readable text content (HTML stripped). Use after web_search to read a result.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to fetch (http/https)' },
+          max_chars: {
+            type: 'number',
+            description: 'Max characters of text to return (default 8000)',
+          },
+        },
+        required: ['url'],
+      },
+    },
+    executor: async (input) => {
+      const url = (input.url as string).trim()
+      const maxChars = (input.max_chars as number) || 8000
+      if (!/^https?:\/\//i.test(url)) {
+        return 'Error: url must start with http:// or https://'
+      }
+      try {
+        return await webFetch(url, maxChars)
+      } catch (err: unknown) {
+        const e = err as { message?: string }
+        return `Error fetching ${url}: ${e.message || 'unknown error'}`
+      }
+    },
+  })
+
   return registry
+}
+
+const WEB_USER_AGENT =
+  'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0'
+
+export interface WebSearchResult {
+  title: string
+  url: string
+  snippet: string
+}
+
+/**
+ * Search the web via DuckDuckGo's HTML endpoint (no API key required).
+ */
+export async function webSearch(
+  query: string,
+  count: number,
+): Promise<WebSearchResult[]> {
+  const endpoint = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+  const res = await fetch(endpoint, {
+    headers: {
+      'User-Agent': WEB_USER_AGENT,
+      Accept: 'text/html',
+    },
+    signal: AbortSignal.timeout(20_000),
+  })
+  if (!res.ok) {
+    throw new Error(`search returned HTTP ${res.status}`)
+  }
+  const html = await res.text()
+  const results: WebSearchResult[] = []
+
+  // Each result is an anchor with class "result__a"; snippets use "result__snippet".
+  const linkRe =
+    /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g
+  const snippetRe =
+    /<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/g
+
+  const snippets: string[] = []
+  let sm: RegExpExecArray | null
+  while ((sm = snippetRe.exec(html)) !== null) {
+    snippets.push(stripHtml(sm[1]))
+  }
+
+  let lm: RegExpExecArray | null
+  let idx = 0
+  while ((lm = linkRe.exec(html)) !== null && results.length < count) {
+    const url = decodeDuckUrl(lm[1])
+    const title = stripHtml(lm[2])
+    if (!title || !url) {
+      idx++
+      continue
+    }
+    results.push({ title, url, snippet: snippets[idx] || '' })
+    idx++
+  }
+  return results
+}
+
+/**
+ * Fetch a URL and return its readable text content with HTML stripped.
+ */
+export async function webFetch(url: string, maxChars: number): Promise<string> {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': WEB_USER_AGENT,
+      Accept: 'text/html,application/xhtml+xml',
+    },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(25_000),
+  })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+  const contentType = res.headers.get('content-type') || ''
+  const body = await res.text()
+
+  let text: string
+  if (contentType.includes('html') || /<html[\s>]/i.test(body)) {
+    text = htmlToText(body)
+  } else {
+    text = body
+  }
+
+  if (text.length > maxChars) {
+    return `${text.slice(0, maxChars)}\n\n[... truncated, ${text.length} chars total ...]`
+  }
+  return text || '[page returned no readable text]'
+}
+
+/**
+ * DuckDuckGo wraps result URLs in a redirect like
+ * //duckduckgo.com/l/?uddg=<encoded>&rut=... — unwrap to the real URL.
+ */
+function decodeDuckUrl(raw: string): string {
+  const m = raw.match(/[?&]uddg=([^&]+)/)
+  if (m) {
+    try {
+      return decodeURIComponent(m[1])
+    } catch {
+      return raw
+    }
+  }
+  if (raw.startsWith('//')) return `https:${raw}`
+  return raw
+}
+
+/**
+ * Strip HTML tags and decode common entities from a short fragment.
+ */
+function stripHtml(fragment: string): string {
+  return decodeEntities(fragment.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Convert a full HTML document to plain readable text.
+ */
+function htmlToText(html: string): string {
+  const cleaned = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    // Turn block-level boundaries into newlines so text stays readable.
+    .replace(/<\/(p|div|section|article|h[1-6]|li|tr|br)[^>]*>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+  return decodeEntities(cleaned)
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  eacute: 'é', egrave: 'è', ecirc: 'ê', euml: 'ë',
+  agrave: 'à', acirc: 'â', aacute: 'á', auml: 'ä',
+  ugrave: 'ù', ucirc: 'û', uacute: 'ú', uuml: 'ü',
+  ocirc: 'ô', ograve: 'ò', oacute: 'ó', ouml: 'ö',
+  icirc: 'î', iuml: 'ï', igrave: 'ì', iacute: 'í',
+  ccedil: 'ç', ntilde: 'ñ',
+  Eacute: 'É', Egrave: 'È', Ecirc: 'Ê', Agrave: 'À', Acirc: 'Â', Ccedil: 'Ç',
+  laquo: '«', raquo: '»', deg: '°', euro: '€', pound: '£',
+  hellip: '…', mdash: '—', ndash: '–', rsquo: '’', lsquo: '‘',
+  ldquo: '“', rdquo: '”', copy: '©', reg: '®', trade: '™',
+  middot: '·', bull: '•', times: '×', divide: '÷',
+}
+
+function decodeEntities(s: string): string {
+  return s
+    // Numeric: decimal &#233; and hex &#xE9;
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => {
+      try {
+        return String.fromCodePoint(parseInt(h, 16))
+      } catch {
+        return ''
+      }
+    })
+    .replace(/&#(\d+);/g, (_, n) => {
+      try {
+        return String.fromCodePoint(Number(n))
+      } catch {
+        return ''
+      }
+    })
+    // Named entities (common Latin/French + punctuation)
+    .replace(/&([a-zA-Z]+);/g, (m, name) =>
+      Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, name)
+        ? NAMED_ENTITIES[name]
+        : m,
+    )
 }
 
 /**

@@ -35,7 +35,11 @@ const DEFAULT_SETTINGS: Settings = {
   anthropicApiKey: '',
   apiKeys: {},
   systemPrompt:
-    'You are a helpful AI assistant running on Linux. You can see the screen, control mouse/keyboard, and manage files.',
+    'You are a helpful AI assistant running on Linux. When tools are enabled (Agent Mode) you can: ' +
+    'search the web with web_search and read pages with web_fetch, run shell commands, read/write files, ' +
+    'see the screen, and control mouse/keyboard. ' +
+    'For any question about current, real-time or factual information you are unsure of ' +
+    '(news, weather, prices, versions, documentation), use web_search first instead of saying you cannot access the internet.',
 }
 
 function getSettingsPath(): string {
