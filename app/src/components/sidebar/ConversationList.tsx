@@ -34,9 +34,29 @@ export function ConversationList() {
     }
   }, [])
 
+  // Load on mount, retrying a few times in case the backend is still
+  // starting up (so the list never stays empty just because of a slow start).
   useEffect(() => {
-    fetchConversations()
-  }, [fetchConversations])
+    let cancelled = false
+    let attempts = 0
+    const tryLoad = async () => {
+      try {
+        const data = await getConversations()
+        if (cancelled) return
+        const list = data.conversations || []
+        setConversations(list)
+        if (list.length === 0 && attempts++ < 6) {
+          setTimeout(tryLoad, 1000)
+        }
+      } catch {
+        if (!cancelled && attempts++ < 6) setTimeout(tryLoad, 1000)
+      }
+    }
+    tryLoad()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSelect = async (conv: ConversationItem) => {
     setActiveConversation(conv.id)

@@ -79,17 +79,15 @@ export function ChatInput({ onSend }: ChatInputProps) {
 
   return (
     <div className="chat-input">
-      <label className="agent-toggle" title="Agent Mode — active les outils">
-        <input
-          type="checkbox"
-          className="agent-toggle__checkbox"
-          checked={agentMode}
-          onChange={(e) => setAgentMode(e.target.checked)}
-          disabled={isStreaming}
-        />
-        <span className="agent-toggle__slider" />
-        <span className="agent-toggle__label"><BotIcon size={14} /></span>
-      </label>
+      <button
+        type="button"
+        className={`chat-input__icon-btn${agentMode ? ' chat-input__icon-btn--active' : ''}`}
+        onClick={() => setAgentMode((v) => !v)}
+        disabled={isStreaming}
+        title={agentMode ? 'Agent Mode activé — outils ON (clique pour désactiver)' : 'Agent Mode désactivé — clique pour activer les outils'}
+      >
+        <BotIcon size={18} />
+      </button>
       <button
         type="button"
         className={`chat-input__icon-btn${isRecording ? ' chat-input__icon-btn--recording' : ''}`}

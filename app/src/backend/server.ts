@@ -171,18 +171,11 @@ export function createServer(injectedRegistry?: import('./tool-registry').ToolRe
 export async function startServer(port = 3001): Promise<void> {
   await coworkApp.init()
 
-  // Create tool registry and connect MCP servers (non-blocking — failures are logged)
+  // Create the registry and start serving IMMEDIATELY so the UI can load
+  // conversations without waiting. MCP servers (bunx) can take seconds to
+  // download/spawn on first run — connect them in the BACKGROUND and register
+  // their tools into the same registry object once ready.
   const toolRegistry = createDefaultRegistry()
-  try {
-    const mcpToolCount = await connectMcpServers(toolRegistry)
-    if (mcpToolCount > 0) {
-      console.log(`MCP bridge: ${mcpToolCount} external tools registered`)
-    }
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.warn(`MCP bridge init failed (non-fatal): ${msg}`)
-  }
-
   const app = createServer(toolRegistry)
 
   console.log(`Server listening on http://0.0.0.0:${port}`)
@@ -193,6 +186,19 @@ export async function startServer(port = 3001): Promise<void> {
     fetch: app.fetch,
     idleTimeout: 120, // 2 minutes for SSE streams
   })
+
+  // Non-blocking: connect MCP servers after the server is already accepting
+  // requests. Tools added here become available to later agent calls.
+  connectMcpServers(toolRegistry)
+    .then((mcpToolCount) => {
+      if (mcpToolCount > 0) {
+        console.log(`MCP bridge: ${mcpToolCount} external tools registered`)
+      }
+    })
+    .catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn(`MCP bridge init failed (non-fatal): ${msg}`)
+    })
 }
 
 // Run if executed directly

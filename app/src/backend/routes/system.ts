@@ -49,6 +49,22 @@ export function createSystemRoutes(): Hono {
   app.put('/settings', async (c) => {
     try {
       const body = await c.req.json<Settings>()
+      // The GET endpoint masks existing keys as '••••' for security. When the
+      // panel saves, it sends those masks back — so we must NOT overwrite a real
+      // stored key with the mask. Keep the existing value for any masked field.
+      const MASK = '••••'
+      const current = loadSettings()
+      if (body.apiKeys) {
+        for (const k of Object.keys(body.apiKeys)) {
+          if (body.apiKeys[k] === MASK) {
+            body.apiKeys[k] = current.apiKeys?.[k] || ''
+          }
+        }
+      }
+      const bodyAny = body as Settings & { anthropicApiKey?: string }
+      if (bodyAny.anthropicApiKey === MASK) {
+        bodyAny.anthropicApiKey = current.anthropicApiKey || ''
+      }
       saveSettings(body)
       return c.json({ ok: true })
     } catch (err: unknown) {
