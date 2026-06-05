@@ -14,7 +14,7 @@ import type { AgentInfo } from '../../api/client'
 const FILE_MODIFYING_TOOLS = new Set(['write_file', 'edit_file'])
 
 export function AgentPanel() {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [undoStates, setUndoStates] = useState<Record<string, 'idle' | 'undone'>>({})
   const [screenshotPulse, setScreenshotPulse] = useState(false)
   const lastScreenshotTs = useRef<number>(0)
