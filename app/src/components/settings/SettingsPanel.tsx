@@ -294,15 +294,11 @@ export function SettingsPanel({ onClose }: Props) {
             </div>
 
             <div className="settings-field">
-              <label className="settings-field__label">Max Tokens</label>
-              <input
-                type="number"
-                className="settings-field__input settings-field__input--short"
-                value={settings.advanced.maxTokens}
-                onChange={(e) =>
-                  updateAdvanced('maxTokens', parseInt(e.target.value, 10) || 0)
-                }
-              />
+              <label className="settings-field__label">Longueur max des réponses</label>
+              <span className="settings-field__warning">
+                Automatique selon le modèle (8192 pour la plupart). Ignoré pour Claude/Codex en
+                abonnement — ils gèrent la longueur eux-mêmes.
+              </span>
             </div>
 
             <div className="settings-field">

@@ -82,7 +82,16 @@ export class ModelRouter {
 			model: config.model,
 			max_tokens: config.maxTokens || 4096,
 			temperature: config.temperature,
-			system: system || undefined,
+			// Prompt caching: cache the (stable) system prompt -> up to 90% cheaper/faster on repeat
+			system: system
+				? [
+						{
+							type: "text" as const,
+							text: system,
+							cache_control: { type: "ephemeral" as const },
+						},
+					]
+				: undefined,
 			messages: formatted,
 			...(tools && tools.length > 0
 				? { tools: tools as Anthropic.Messages.Tool[] }
@@ -125,7 +134,16 @@ export class ModelRouter {
 			model: config.model,
 			max_tokens: config.maxTokens || 4096,
 			temperature: config.temperature,
-			system: system || undefined,
+			// Prompt caching: cache the (stable) system prompt -> up to 90% cheaper/faster on repeat
+			system: system
+				? [
+						{
+							type: "text" as const,
+							text: system,
+							cache_control: { type: "ephemeral" as const },
+						},
+					]
+				: undefined,
 			messages: formatted,
 			...(tools && tools.length > 0
 				? { tools: tools as Anthropic.Messages.Tool[] }
