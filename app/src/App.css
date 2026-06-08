@@ -244,6 +244,12 @@
   opacity: 1;
 }
 
+.chat-input__stop {
+  background: #e94560 !important;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
 .sidebar__rename-input {
   width: 100%;
   padding: 4px 6px;

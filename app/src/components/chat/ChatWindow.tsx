@@ -35,6 +35,7 @@ export function ChatWindow() {
 
   const lastRenderRef = useRef(0)
   const pendingUpdateRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     waitForBackend().then((ready) => setBackendReady(ready))
@@ -81,11 +82,17 @@ export function ChatWindow() {
       })
 
       setStreaming(true)
+      const controller = new AbortController()
+      abortRef.current = controller
 
       try {
         let fullContent = ''
 
-        for await (const event of streamChat(text, { useTools: agentMode, model: activeModel.id })) {
+        for await (const event of streamChat(text, {
+          useTools: agentMode,
+          model: activeModel.id,
+          signal: controller.signal,
+        })) {
           switch (event.type) {
             case 'text':
               fullContent += event.content
@@ -141,19 +148,28 @@ export function ChatWindow() {
           setArtifact(artifact)
         }
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err)
-        flushContent(`Erreur: ${errMsg}`)
-        addAuditEntry('error', errMsg)
+        if (err instanceof Error && err.name === 'AbortError') {
+          addAuditEntry('send', 'Génération arrêtée')
+        } else {
+          const errMsg = err instanceof Error ? err.message : String(err)
+          flushContent(`Erreur: ${errMsg}`)
+          addAuditEntry('error', errMsg)
+        }
       } finally {
         if (pendingUpdateRef.current) {
           clearTimeout(pendingUpdateRef.current)
           pendingUpdateRef.current = null
         }
         setStreaming(false)
+        abortRef.current = null
       }
     },
     [activeModel, addMessage, setStreaming, addAuditEntry, addAgentAction, setCurrentScreenshot, setArtifact, throttledUpdate, flushContent],
   )
+
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort()
+  }, [])
 
   if (!backendReady) {
     return (
@@ -209,7 +225,7 @@ export function ChatWindow() {
       ) : (
         <MessageList />
       )}
-      <ChatInput onSend={handleSend} />
+      <ChatInput onSend={handleSend} onStop={handleStop} />
       <div className="chat-window__footer">
         <TokenCounter />
         <AuditPanel />

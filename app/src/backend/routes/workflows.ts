@@ -16,56 +16,56 @@ export interface Workflow {
 export const DEFAULT_WORKFLOWS: Workflow[] = [
   {
     id: 'organize-downloads',
-    name: 'Organize Downloads',
-    description: 'Sort files in ~/Downloads by type',
+    name: 'Ranger les téléchargements',
+    description: 'Trier ~/Téléchargements par type',
     icon: 'folder',
     mode: 'file-ops',
     prompt:
-      'List files in ~/Downloads and suggest how to organize them by type (documents, images, videos, archives). Create the folders and move the files.',
+      'Liste les fichiers de ~/Téléchargements et propose un rangement par type (documents, images, vidéos, archives). Crée les dossiers et déplace les fichiers. Réponds en français.',
   },
   {
     id: 'system-health',
-    name: 'System Health Check',
-    description: 'Check disk, memory, CPU and services',
+    name: 'État du système',
+    description: 'Disque, mémoire, CPU et services',
     icon: 'heart-pulse',
     mode: 'file-ops',
     prompt:
-      'Check system health: disk usage (df -h), memory (free -h), CPU load (uptime), running services (systemctl list-units --state=running | head -20). Summarize any issues.',
+      "Vérifie l'état du système : espace disque (df -h), mémoire (free -h), charge CPU (uptime), services actifs (systemctl list-units --state=running | head -20). Résume les éventuels problèmes en français.",
   },
   {
     id: 'screenshot-describe',
-    name: 'Describe My Screen',
-    description: 'Take a screenshot and describe it',
+    name: 'Décris mon écran',
+    description: "Capture l'écran et le décrit",
     icon: 'camera',
     mode: 'computer-use',
-    prompt: 'Take a screenshot of my desktop and describe everything you see in detail.',
+    prompt: 'Prends une capture de mon écran et décris en détail tout ce que tu vois, en français.',
   },
   {
     id: 'find-large-files',
-    name: 'Find Large Files',
-    description: 'Find the 20 largest files in home',
+    name: 'Trouver les gros fichiers',
+    description: 'Les 20 plus gros fichiers du dossier perso',
     icon: 'search',
     mode: 'file-ops',
     prompt:
-      'Find the 20 largest files in my home directory (du -sh ~/* | sort -rh | head -20). Tell me what they are and if any can be safely deleted.',
+      'Trouve les 20 plus gros fichiers de mon dossier personnel (du -sh ~/* | sort -rh | head -20). Dis-moi ce que c\'est et lesquels peuvent être supprimés sans risque. Réponds en français.',
   },
   {
     id: 'git-status',
-    name: 'Git Status Report',
-    description: 'Check all git repos in ~/Documents',
+    name: 'Rapport Git',
+    description: 'État de tous les dépôts git du dossier perso',
     icon: 'git-branch',
     mode: 'file-ops',
     prompt:
-      'Check all git repositories in ~/Documents/ (find . -name .git -type d). For each, show the branch, status, and last commit.',
+      "Vérifie tous les dépôts git de mon dossier personnel (find ~ -name .git -type d 2>/dev/null | head -30). Pour chacun, montre la branche, le statut et le dernier commit. Réponds en français.",
   },
   {
     id: 'daily-summary',
-    name: 'Daily Summary',
-    description: 'Uptime, disk, recent files, tasks',
+    name: 'Résumé du jour',
+    description: 'Activité, disque, fichiers récents',
     icon: 'calendar',
     mode: 'file-ops',
     prompt:
-      'Give me a summary of today: system uptime, disk usage, recent files modified in the last 24h (find ~ -mtime 0 -type f | head -20), and any running background tasks.',
+      "Fais-moi un résumé de la journée : uptime du système, usage disque, fichiers modifiés dans les dernières 24h (find ~ -mtime 0 -type f 2>/dev/null | head -20), et les tâches de fond en cours. Réponds en français.",
   },
 ]
 

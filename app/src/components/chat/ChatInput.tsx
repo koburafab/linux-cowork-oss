@@ -5,9 +5,10 @@ import { transcribeVoice } from '../../api/client'
 
 interface ChatInputProps {
   onSend: (message: string, agentMode: boolean) => void
+  onStop?: () => void
 }
 
-export function ChatInput({ onSend }: ChatInputProps) {
+export function ChatInput({ onSend, onStop }: ChatInputProps) {
   const [text, setText] = useState('')
   const [agentMode, setAgentMode] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
@@ -126,14 +127,26 @@ export function ChatInput({ onSend }: ChatInputProps) {
         disabled={isStreaming}
         rows={1}
       />
-      <button
-        className="chat-input__send"
-        onClick={handleSend}
-        disabled={isStreaming || !text.trim()}
-        title="Envoyer (Enter)"
-      >
-        {isStreaming ? '...' : <SendIcon size={18} />}
-      </button>
+      {isStreaming ? (
+        <button
+          type="button"
+          className="chat-input__send chat-input__stop"
+          onClick={onStop}
+          title="Arrêter la génération"
+        >
+          ■
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="chat-input__send"
+          onClick={handleSend}
+          disabled={!text.trim()}
+          title="Envoyer (Enter)"
+        >
+          <SendIcon size={18} />
+        </button>
+      )}
     </div>
   )
 }
