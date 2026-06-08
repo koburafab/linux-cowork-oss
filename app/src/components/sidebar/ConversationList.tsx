@@ -24,6 +24,8 @@ export function ConversationList() {
   const setActiveConversation = useChatStore((s) => s.setActiveConversation)
   const loadConversation = useChatStore((s) => s.loadConversation)
   const clearMessages = useChatStore((s) => s.clearMessages)
+  const availableModels = useChatStore((s) => s.availableModels)
+  const setActiveModel = useChatStore((s) => s.setActiveModel)
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -60,6 +62,9 @@ export function ConversationList() {
 
   const handleSelect = async (conv: ConversationItem) => {
     setActiveConversation(conv.id)
+    // Restore the model this conversation was created with
+    const convModel = availableModels.find((m) => m.id === conv.model || m.name === conv.model)
+    if (convModel) setActiveModel(convModel)
     try {
       const data = await getConversationMessages(conv.id)
       const messages = (data.messages || []).map((m: { role: string; content: string; timestamp: number }) => ({

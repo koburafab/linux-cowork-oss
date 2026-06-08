@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "bunx --bun vite preview",
+    "build:backend": "bun build --compile src/backend/server.ts --outfile src-tauri/binaries/cowork-backend-$(rustc -vV | sed -n 's/host: //p')",
     "tauri": "tauri"
   },
   "dependencies": {
