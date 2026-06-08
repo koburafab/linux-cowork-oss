@@ -9,8 +9,9 @@ import { AuditPanel } from './AuditPanel'
 import { TokenCounter } from './TokenCounter'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { PluginBrowser } from '../plugins/PluginBrowser'
+import { MemoryPanel } from '../memory/MemoryPanel'
 import { WorkflowGrid } from '../workflows/WorkflowGrid'
-import { SettingsIcon, PuzzleIcon } from '../icons/Icons'
+import { SettingsIcon, PuzzleIcon, BotIcon } from '../icons/Icons'
 
 /** Throttle: update the store at most every N ms during streaming */
 const RENDER_THROTTLE_MS = 150
@@ -18,6 +19,7 @@ const RENDER_THROTTLE_MS = 150
 export function ChatWindow() {
   const [showSettings, setShowSettings] = useState(false)
   const [showPlugins, setShowPlugins] = useState(false)
+  const [showMemory, setShowMemory] = useState(false)
   const addMessage = useChatStore((s) => s.addMessage)
   const activeModel = useChatStore((s) => s.activeModel)
   const setStreaming = useChatStore((s) => s.setStreaming)
@@ -172,6 +174,13 @@ export function ChatWindow() {
           <ModelSelector />
           <button
             className="chat-window__plugins-btn"
+            onClick={() => setShowMemory((v) => !v)}
+            title="Mémoire de l'agent"
+          >
+            <BotIcon size={18} />
+          </button>
+          <button
+            className="chat-window__plugins-btn"
             onClick={() => setShowPlugins((v) => !v)}
             title="Plugins"
           >
@@ -198,6 +207,7 @@ export function ChatWindow() {
       </div>
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showPlugins && <PluginBrowser onClose={() => setShowPlugins(false)} />}
+      {showMemory && <MemoryPanel onClose={() => setShowMemory(false)} />}
     </div>
   )
 }
