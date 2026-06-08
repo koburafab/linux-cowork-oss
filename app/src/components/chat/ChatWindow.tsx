@@ -214,7 +214,7 @@ export function ChatWindow() {
           <button
             className="chat-window__settings-btn"
             onClick={() => setShowSettings((v) => !v)}
-            title="Settings"
+            title="Réglages"
           >
             <SettingsIcon size={18} />
           </button>

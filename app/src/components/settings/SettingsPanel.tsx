@@ -158,7 +158,7 @@ export function SettingsPanel({ onClose }: Props) {
     return (
       <div className="settings-overlay">
         <div className="settings-panel" ref={panelRef}>
-          <p style={{ textAlign: 'center', opacity: 0.5 }}>Loading...</p>
+          <p style={{ textAlign: 'center', opacity: 0.5 }}>Chargement…</p>
         </div>
       </div>
     )
@@ -168,7 +168,7 @@ export function SettingsPanel({ onClose }: Props) {
     <div className="settings-overlay">
       <div className="settings-panel" ref={panelRef}>
         <div className="settings-panel__header">
-          <h2 className="settings-panel__title">Settings</h2>
+          <h2 className="settings-panel__title">Réglages</h2>
           <button className="settings-panel__close" onClick={onClose}>
             ✕
           </button>
@@ -211,7 +211,7 @@ export function SettingsPanel({ onClose }: Props) {
 
           {/* API Keys */}
           <section className="settings-section">
-            <h3 className="settings-section__title">API Keys</h3>
+            <h3 className="settings-section__title">Clés API</h3>
             {API_KEY_FIELDS.map((field) => (
               <div className="settings-field" key={field.key}>
                 <label className="settings-field__label">{field.label}</label>
@@ -234,7 +234,7 @@ export function SettingsPanel({ onClose }: Props) {
                 </div>
                 {!settings.apiKeys[field.key] && (
                   <span className="settings-field__warning">
-                    Required for {field.models}
+                    Requis pour {field.models}
                   </span>
                 )}
               </div>
@@ -243,9 +243,9 @@ export function SettingsPanel({ onClose }: Props) {
 
           {/* Model */}
           <section className="settings-section">
-            <h3 className="settings-section__title">Model</h3>
+            <h3 className="settings-section__title">Modèle</h3>
             <div className="settings-field">
-              <label className="settings-field__label">Active Model</label>
+              <label className="settings-field__label">Modèle actif</label>
               <select
                 className="settings-field__select"
                 value={settings.model}
@@ -264,7 +264,7 @@ export function SettingsPanel({ onClose }: Props) {
 
           {/* Advanced */}
           <section className="settings-section">
-            <h3 className="settings-section__title">Advanced</h3>
+            <h3 className="settings-section__title">Avancé</h3>
 
             <div className="settings-field">
               <label className="settings-field__label">Ollama URL</label>
@@ -306,20 +306,20 @@ export function SettingsPanel({ onClose }: Props) {
             </div>
 
             <div className="settings-field">
-              <label className="settings-field__label">System Prompt</label>
+              <label className="settings-field__label">Prompt système</label>
               <textarea
                 className="settings-field__textarea"
                 rows={4}
                 value={settings.advanced.systemPrompt}
                 onChange={(e) => updateAdvanced('systemPrompt', e.target.value)}
-                placeholder="Optional system prompt..."
+                placeholder="Prompt système optionnel…"
               />
             </div>
           </section>
         </div>
 
         <div className="settings-panel__footer">
-          {saved && <span className="settings-panel__saved">Saved!</span>}
+          {saved && <span className="settings-panel__saved">Enregistré !</span>}
           <button className="settings-panel__save-btn" onClick={handleSave}>
             Save
           </button>

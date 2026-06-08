@@ -128,13 +128,13 @@ export function ConversationList() {
     <div className="sidebar">
       <div className="sidebar__header">
         <span className="sidebar__title">Conversations</span>
-        <button type="button" className="sidebar__new-btn" onClick={handleNew} title="New conversation">
+        <button type="button" className="sidebar__new-btn" onClick={handleNew} title="Nouvelle conversation">
           <PlusIcon size={14} />
         </button>
       </div>
       <div className="sidebar__list">
         {conversations.length === 0 && (
-          <div className="sidebar__empty">No conversations yet</div>
+          <div className="sidebar__empty">Aucune conversation</div>
         )}
         {conversations.map((conv) => (
           <div
@@ -172,7 +172,7 @@ export function ConversationList() {
               type="button"
               className="sidebar__delete-btn"
               onClick={(e) => handleDelete(e, conv.id)}
-              title="Delete conversation"
+              title="Supprimer la conversation"
             >
               <CloseIcon size={12} />
             </button>

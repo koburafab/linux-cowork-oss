@@ -120,7 +120,7 @@ export function PluginBrowser({ onClose }: Props) {
 			<div className="plugin-browser-overlay">
 				<div className="plugin-browser" ref={panelRef}>
 					<p style={{ textAlign: "center", opacity: 0.5, padding: "24px" }}>
-						Loading plugins...
+						Chargement…
 					</p>
 				</div>
 			</div>
@@ -185,14 +185,14 @@ export function PluginBrowser({ onClose }: Props) {
 							className={`plugin-browser__filter-btn${filter === f ? " plugin-browser__filter-btn--active" : ""}`}
 							onClick={() => setFilter(f)}
 						>
-							{f === "all" ? "All" : TYPE_LABELS[f]} ({counts[f]})
+							{f === "all" ? "Tous" : TYPE_LABELS[f]} ({counts[f]})
 						</button>
 					))}
 				</div>
 
 				<div className="plugin-browser__body">
 					{filtered.length === 0 ? (
-						<p className="plugin-browser__empty">No plugins found.</p>
+						<p className="plugin-browser__empty">Aucun plugin.</p>
 					) : (
 						<div className="plugin-browser__grid">
 							{filtered.map((plugin) => (
@@ -223,7 +223,7 @@ export function PluginBrowser({ onClose }: Props) {
 											<span className="plugin-card__toggle-slider" />
 										</label>
 										<span className="plugin-card__status">
-											{plugin.enabled ? "Enabled" : "Disabled"}
+											{plugin.enabled ? "Activé" : "Désactivé"}
 										</span>
 									</div>
 								</div>

@@ -108,7 +108,7 @@ export function ArtifactViewer() {
             <button
               className="artifact-viewer__btn"
               onClick={() => downloadSvg(artifact.content)}
-              title="Download"
+              title="Télécharger"
             >
               <ExternalLinkIcon size={16} />
             </button>
@@ -117,7 +117,7 @@ export function ArtifactViewer() {
             <button
               className="artifact-viewer__btn"
               onClick={handleOpenInBrowser}
-              title="Open in browser"
+              title="Ouvrir dans le navigateur"
             >
               <ExternalLinkIcon size={16} />
             </button>
@@ -126,7 +126,7 @@ export function ArtifactViewer() {
             <button
               className="artifact-viewer__btn"
               onClick={handleDetach}
-              title="Detach"
+              title="Détacher"
             >
               <ExternalLinkIcon size={16} />
             </button>

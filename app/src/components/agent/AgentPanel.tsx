@@ -115,12 +115,12 @@ export function AgentPanel() {
             className="agent-panel__clear-btn"
             onClick={clearAgentActions}
           >
-            Clear
+            Effacer
           </button>
           <button
             className="agent-panel__collapse-btn"
             onClick={() => setCollapsed(true)}
-            title="Collapse panel"
+            title="Réduire le panneau"
           >
             <ChevronRightIcon size={16} />
           </button>
@@ -143,7 +143,7 @@ export function AgentPanel() {
             className="agent-panel__spawn-btn"
             onClick={() => setShowSpawnDialog((v) => !v)}
           >
-            Spawn Agent
+            Créer un agent
           </button>
         </div>
 
@@ -152,25 +152,25 @@ export function AgentPanel() {
             <input
               className="agent-panel__spawn-input"
               type="text"
-              placeholder="Agent name"
+              placeholder="Nom de l'agent"
               value={spawnName}
               onChange={(e) => setSpawnName(e.target.value)}
             />
             <input
               className="agent-panel__spawn-input"
               type="text"
-              placeholder="Task"
+              placeholder="Tâche"
               value={spawnTask}
               onChange={(e) => setSpawnTask(e.target.value)}
             />
             <button className="agent-panel__spawn-confirm" onClick={handleSpawn}>
-              Go
+              Lancer
             </button>
           </div>
         )}
 
         {liveAgents.length === 0 && (
-          <p className="agent-panel__empty">No active agents.</p>
+          <p className="agent-panel__empty">Aucun agent actif.</p>
         )}
         {liveAgents.map((a) => (
           <div key={a.id} className="agent-panel__agent-row">
@@ -182,7 +182,7 @@ export function AgentPanel() {
               className="agent-panel__kill-btn"
               onClick={() => handleKill(a.id)}
             >
-              Kill
+              Arrêter
             </button>
           </div>
         ))}
@@ -190,7 +190,7 @@ export function AgentPanel() {
 
       <div className="agent-panel__actions">
         {agentActions.length === 0 && (
-          <p className="agent-panel__empty">No agent actions yet.</p>
+          <p className="agent-panel__empty">Aucune action pour le moment.</p>
         )}
         {agentActions.map((action) => (
           <div key={action.id} className={`agent-action agent-action--${action.type}`}>
