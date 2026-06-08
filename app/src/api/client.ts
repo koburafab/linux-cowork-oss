@@ -36,12 +36,13 @@ export async function transcribeVoice(seconds = 5): Promise<string> {
  */
 export async function* streamChat(
   message: string,
-  options?: { useTools?: boolean; model?: string },
+  options?: { useTools?: boolean; model?: string; signal?: AbortSignal },
 ): AsyncGenerator<SSEEvent> {
   const res = await fetch(`${BACKEND_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, useTools: options?.useTools, model: options?.model }),
+    signal: options?.signal,
   })
 
   if (!res.ok) {

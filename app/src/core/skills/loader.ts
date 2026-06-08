@@ -18,8 +18,52 @@ export interface Skill {
   tools?: string[]
 }
 
-function getSkillsDir(): string {
+export function getSkillsDir(): string {
   return path.join(os.homedir(), '.config', 'linux-cowork', 'skills')
+}
+
+/** Turn a name into a safe filename slug. */
+function slugify(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'skill'
+  )
+}
+
+/**
+ * Create or overwrite a skill/template as a .md file with frontmatter.
+ * The body is the reusable prompt/canvas the agent will follow.
+ */
+export function saveSkill(input: { name: string; description?: string; prompt: string }): string {
+  const dir = getSkillsDir()
+  fs.mkdirSync(dir, { recursive: true })
+  const slug = slugify(input.name)
+  const file = path.join(dir, `${slug}.md`)
+  const desc = (input.description || '').replace(/\n/g, ' ')
+  const content = `---\nname: ${input.name}\ndescription: ${desc}\n---\n\n${input.prompt}\n`
+  fs.writeFileSync(file, content, 'utf-8')
+  return slug
+}
+
+/** Delete a skill by its name (matches the file whose frontmatter name equals it). */
+export function deleteSkill(name: string): boolean {
+  const dir = getSkillsDir()
+  if (!fs.existsSync(dir)) return false
+  for (const f of fs.readdirSync(dir)) {
+    const ext = path.extname(f)
+    if (ext !== '.md' && ext !== '.json') continue
+    const skill = parseSkillFile(path.join(dir, f))
+    if (skill && skill.name === name) {
+      fs.unlinkSync(path.join(dir, f))
+      return true
+    }
+  }
+  return false
 }
 
 /**

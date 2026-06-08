@@ -3,7 +3,7 @@
  */
 
 import { Hono } from "hono";
-import { loadSkills } from "../../core/skills/loader";
+import { deleteSkill, loadSkills, saveSkill } from "../../core/skills/loader";
 import { loadMcpConfig } from "../mcp-bridge";
 import { createDefaultRegistry } from "../tool-registry";
 
@@ -92,6 +92,41 @@ export function createPluginRoutes(): Hono {
 
 			const enabled = !disabledSkills.has(id);
 			return c.json({ id, enabled });
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			return c.json({ error: msg }, 500);
+		}
+	});
+
+	// Create/overwrite a skill (= a reusable canvas/template the agent follows)
+	app.post("/skills", async (c) => {
+		try {
+			const body = await c.req.json<{
+				name?: string;
+				description?: string;
+				prompt?: string;
+			}>();
+			if (!body.name || !body.prompt) {
+				return c.json({ error: "name and prompt are required" }, 400);
+			}
+			const slug = saveSkill({
+				name: body.name,
+				description: body.description,
+				prompt: body.prompt,
+			});
+			return c.json({ slug }, 201);
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			return c.json({ error: msg }, 500);
+		}
+	});
+
+	// Delete a skill by its name
+	app.delete("/skills/:name", (c) => {
+		try {
+			const name = decodeURIComponent(c.req.param("name"));
+			const ok = deleteSkill(name);
+			return ok ? c.json({ ok: true }) : c.json({ error: "not found" }, 404);
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : String(err);
 			return c.json({ error: msg }, 500);
