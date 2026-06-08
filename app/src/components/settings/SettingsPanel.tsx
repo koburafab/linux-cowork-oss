@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { getSettings, updateSettings } from '../../api/client'
 
+const BACKEND = 'http://localhost:3001'
+
+interface CliStatus {
+  claude: { installed: boolean; loggedIn: boolean }
+  codex: { installed: boolean; loggedIn: boolean }
+}
+
 interface SettingsData {
   apiKeys: {
     deepseek: string
@@ -48,6 +55,8 @@ export function SettingsPanel({ onClose }: Props) {
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const panelRef = useRef<HTMLDivElement>(null)
+  const [cliStatus, setCliStatus] = useState<CliStatus | null>(null)
+  const [connecting, setConnecting] = useState<string | null>(null)
 
   const availableModels = useChatStore((s) => s.availableModels)
   const activeModel = useChatStore((s) => s.activeModel)
@@ -69,6 +78,34 @@ export function SettingsPanel({ onClose }: Props) {
       })
       .finally(() => setLoading(false))
   }, [activeModel.id])
+
+  // Load CLI connection status (subscription providers)
+  const loadCliStatus = useCallback(() => {
+    fetch(`${BACKEND}/api/cli-status`)
+      .then((r) => r.json())
+      .then(setCliStatus)
+      .catch(() => setCliStatus(null))
+  }, [])
+  useEffect(() => {
+    loadCliStatus()
+  }, [loadCliStatus])
+
+  const handleConnect = useCallback(
+    async (tool: 'claude' | 'codex') => {
+      setConnecting(tool)
+      try {
+        await fetch(`${BACKEND}/api/cli-login/${tool}`, { method: 'POST' })
+        // leave time to finish the browser/terminal flow, then refresh
+        setTimeout(() => {
+          loadCliStatus()
+          setConnecting(null)
+        }, 4000)
+      } catch {
+        setConnecting(null)
+      }
+    },
+    [loadCliStatus],
+  )
 
   // Click outside to close
   useEffect(() => {
@@ -138,6 +175,40 @@ export function SettingsPanel({ onClose }: Props) {
         </div>
 
         <div className="settings-panel__body">
+          {/* Subscription CLI connections */}
+          <section className="settings-section">
+            <h3 className="settings-section__title">Connexions IA (abonnements)</h3>
+            {(['claude', 'codex'] as const).map((tool) => {
+              const st = cliStatus?.[tool]
+              const label =
+                tool === 'claude' ? 'Claude (abonnement Max)' : 'Codex (abonnement ChatGPT)'
+              const ok = !!st?.installed && !!st?.loggedIn
+              const status = !st?.installed
+                ? 'Non installé'
+                : st.loggedIn
+                  ? 'Connecté'
+                  : 'Non connecté'
+              return (
+                <div className="settings-field settings-cli-row" key={tool}>
+                  <span className={`settings-cli-dot ${ok ? 'is-ok' : 'is-off'}`} />
+                  <span className="settings-cli-label">{label}</span>
+                  <span className="settings-cli-status">{status}</span>
+                  {st?.installed && !st.loggedIn && (
+                    <button
+                      type="button"
+                      className="settings-cli-connect"
+                      disabled={connecting === tool}
+                      onClick={() => handleConnect(tool)}
+                    >
+                      {connecting === tool ? '…' : 'Se connecter'}
+                    </button>
+                  )}
+                  {!st?.installed && <span className="settings-cli-hint">CLI à installer</span>}
+                </div>
+              )
+            })}
+          </section>
+
           {/* API Keys */}
           <section className="settings-section">
             <h3 className="settings-section__title">API Keys</h3>

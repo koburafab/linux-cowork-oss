@@ -12,6 +12,7 @@ import { createAutonomousRoutes } from "./routes/autonomous";
 import { createChatRoutes } from "./routes/chat";
 import { createComputerUseRoutes } from "./routes/computer-use";
 import { createConversationRoutes } from "./routes/conversations";
+import { createCliAuthRoutes } from "./routes/cli-auth";
 import { createMcpRoutes } from "./routes/mcp";
 import { createMemoryRoutes } from "./routes/memories";
 import { createPluginRoutes } from "./routes/plugins";
@@ -55,6 +56,7 @@ export function createServer(
 	app.route("/api", createWorkflowRoutes());
 	app.route("/api", createPluginRoutes());
 	app.route("/api", createMcpRoutes());
+	app.route("/api", createCliAuthRoutes());
 	app.route("/api", createVoiceRoutes(toolRegistry));
 
 	// Health check
