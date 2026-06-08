@@ -76,6 +76,8 @@ export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
       modelConfig.apiKey = keys.moonshot || ''
     } else if (modelConfig.baseUrl?.includes('openrouter.ai')) {
       modelConfig.apiKey = keys.openrouter || ''
+    } else if (modelConfig.baseUrl?.includes('openai.com')) {
+      modelConfig.apiKey = keys.openai || ''
     }
 
     // Acquire computer-use lock
@@ -189,6 +191,8 @@ export function createAutonomousRoutes(toolRegistry: ToolRegistry): Hono {
       modelConfig.apiKey = keys.moonshot || ''
     } else if (modelConfig.baseUrl?.includes('openrouter.ai')) {
       modelConfig.apiKey = keys.openrouter || ''
+    } else if (modelConfig.baseUrl?.includes('openai.com')) {
+      modelConfig.apiKey = keys.openai || ''
     }
 
     // Acquire lock

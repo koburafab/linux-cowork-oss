@@ -27,6 +27,7 @@ export function AgentPanel() {
   const screenshotTimestamp = useChatStore((s) => s.screenshotTimestamp)
   const isAutonomous = useChatStore((s) => s.isAutonomous)
   const setAutonomous = useChatStore((s) => s.setAutonomous)
+  const activeModel = useChatStore((s) => s.activeModel)
   const clearAgentActions = useChatStore((s) => s.clearAgentActions)
 
   // Pulse animation when a new screenshot arrives
@@ -59,7 +60,7 @@ export function AgentPanel() {
   async function handleSpawn() {
     if (!spawnName.trim() || !spawnTask.trim()) return
     try {
-      await spawnAgent({ name: spawnName.trim(), task: spawnTask.trim() })
+      await spawnAgent({ name: spawnName.trim(), task: spawnTask.trim(), model: activeModel.id })
       setSpawnName('')
       setSpawnTask('')
       setShowSpawnDialog(false)

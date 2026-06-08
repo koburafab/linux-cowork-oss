@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend binary (regenerated via: bun build --compile)
+src-tauri/binaries/

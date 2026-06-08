@@ -68,6 +68,7 @@
 .sidebar__list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 6px;
 }
 
@@ -83,6 +84,8 @@
   flex-direction: column;
   gap: 2px;
   width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   text-align: left;
   padding: 8px 44px 8px 10px;
   border: 1px solid transparent;
@@ -107,26 +110,80 @@
   right: 16px;
   width: 22px;
   height: 22px;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 4px;
-  background: transparent;
-  color: var(--text);
-  opacity: 0.35;
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+  opacity: 0.85;
   cursor: pointer;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 
 .sidebar__item:hover .sidebar__delete-btn {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .sidebar__delete-btn:hover {
   opacity: 1 !important;
   color: #f87171;
   background: rgba(248, 113, 113, 0.15);
+}
+
+/* --- Plugin browser: add-MCP button + form --- */
+.plugin-browser__add {
+  margin-left: auto;
+  margin-right: 8px;
+  padding: 4px 10px;
+  border: 1px solid #4ade80;
+  border-radius: 6px;
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.plugin-browser__add:hover {
+  background: rgba(74, 222, 128, 0.25);
+}
+.plugin-browser__add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  margin: 0 12px 8px;
+}
+.plugin-browser__add-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 8px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #0f3460;
+  color: #eee;
+  font-size: 0.85rem;
+}
+.plugin-browser__add-input--wide {
+  flex-basis: 100%;
+}
+.plugin-browser__add-confirm {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #4ade80;
+  color: #06281a;
+  font-weight: 600;
+  cursor: pointer;
+}
+.plugin-browser__add-error {
+  flex-basis: 100%;
+  color: #f87171;
+  font-size: 0.8rem;
 }
 
 .sidebar__rename-input {
@@ -1719,7 +1776,7 @@
 
 .message__copy-btn {
   position: absolute;
-  top: 6px;
+  bottom: 6px;
   right: 6px;
   width: 24px;
   height: 24px;

@@ -2,63 +2,71 @@
  * Hono backend server — connects all modules
  */
 
-import { Hono } from 'hono'
-import { cors } from 'hono/cors'
-import { coworkApp } from '../core/integration'
-import { createChatRoutes } from './routes/chat'
-import { createComputerUseRoutes } from './routes/computer-use'
-import { createAutonomousRoutes } from './routes/autonomous'
-import { createSystemRoutes } from './routes/system'
-import { createConversationRoutes } from './routes/conversations'
-import { createMemoryRoutes } from './routes/memories'
-import { createAgentRoutes } from './routes/agents'
-import { createWorkflowRoutes } from './routes/workflows'
-import { createPluginRoutes } from './routes/plugins'
-import { createMcpRoutes } from './routes/mcp'
-import { createVoiceRoutes } from './routes/voice'
-import { createDefaultRegistry } from './tool-registry'
-import { connectMcpServers } from './mcp-bridge'
-import { DEFAULT_MODELS } from '../core/models/types'
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { coworkApp } from "../core/integration";
+import { DEFAULT_MODELS } from "../core/models/types";
+import { connectMcpServers } from "./mcp-bridge";
+import { createAgentRoutes } from "./routes/agents";
+import { createAutonomousRoutes } from "./routes/autonomous";
+import { createChatRoutes } from "./routes/chat";
+import { createComputerUseRoutes } from "./routes/computer-use";
+import { createConversationRoutes } from "./routes/conversations";
+import { createMcpRoutes } from "./routes/mcp";
+import { createMemoryRoutes } from "./routes/memories";
+import { createPluginRoutes } from "./routes/plugins";
+import { createSystemRoutes } from "./routes/system";
+import { createVoiceRoutes } from "./routes/voice";
+import { createWorkflowRoutes } from "./routes/workflows";
+import { createDefaultRegistry } from "./tool-registry";
 
-export function createServer(injectedRegistry?: import('./tool-registry').ToolRegistry): Hono {
-  const app = new Hono()
+export function createServer(
+	injectedRegistry?: import("./tool-registry").ToolRegistry,
+): Hono {
+	const app = new Hono();
 
-  // CORS for WebView
-  app.use(
-    '*',
-    cors({
-      origin: ['http://localhost:1420', 'http://localhost:5173', 'http://localhost:3001', 'tauri://localhost', 'http://0.0.0.0:3001'],
-      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization'],
-    }),
-  )
+	// CORS for WebView
+	app.use(
+		"*",
+		cors({
+			origin: [
+				"http://localhost:1420",
+				"http://localhost:5173",
+				"http://localhost:3001",
+				"tauri://localhost",
+				"http://0.0.0.0:3001",
+			],
+			allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+			allowHeaders: ["Content-Type", "Authorization"],
+		}),
+	);
 
-  // Tool registry — use injected one (with MCP tools) or create default
-  const toolRegistry = injectedRegistry ?? createDefaultRegistry()
+	// Tool registry — use injected one (with MCP tools) or create default
+	const toolRegistry = injectedRegistry ?? createDefaultRegistry();
 
-  // Mount routes
-  app.route('/api', createChatRoutes(toolRegistry))
-  app.route('/api', createComputerUseRoutes())
-  app.route('/api', createAutonomousRoutes(toolRegistry))
-  app.route('/api', createSystemRoutes())
-  app.route('/api', createConversationRoutes())
-  app.route('/api', createMemoryRoutes())
-  app.route('/api', createAgentRoutes())
-  app.route('/api', createWorkflowRoutes())
-  app.route('/api', createPluginRoutes())
-  app.route('/api', createMcpRoutes())
-  app.route('/api', createVoiceRoutes(toolRegistry))
+	// Mount routes
+	app.route("/api", createChatRoutes(toolRegistry));
+	app.route("/api", createComputerUseRoutes());
+	app.route("/api", createAutonomousRoutes(toolRegistry));
+	app.route("/api", createSystemRoutes());
+	app.route("/api", createConversationRoutes());
+	app.route("/api", createMemoryRoutes());
+	app.route("/api", createAgentRoutes());
+	app.route("/api", createWorkflowRoutes());
+	app.route("/api", createPluginRoutes());
+	app.route("/api", createMcpRoutes());
+	app.route("/api", createVoiceRoutes(toolRegistry));
 
-  // Health check
-  app.get('/health', (c) => c.json({ ok: true }))
+	// Health check
+	app.get("/health", (c) => c.json({ ok: true }));
 
-  // Mobile chat UI — serves a minimal HTML page at GET /
-  app.get('/', (c) => {
-    const modelOptions = DEFAULT_MODELS.map(
-      (m) => `<option value="${m.id}">${m.name}</option>`,
-    ).join('\n        ')
+	// Mobile chat UI — serves a minimal HTML page at GET /
+	app.get("/", (c) => {
+		const modelOptions = DEFAULT_MODELS.map(
+			(m) => `<option value="${m.id}">${m.name}</option>`,
+		).join("\n        ");
 
-    const html = `<!DOCTYPE html>
+		const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -158,50 +166,52 @@ export function createServer(injectedRegistry?: import('./tool-registry').ToolRe
     input.focus();
   </script>
 </body>
-</html>`
-    return c.html(html)
-  })
+</html>`;
+		return c.html(html);
+	});
 
-  return app
+	return app;
 }
 
 /**
  * Start the server — init CoworkApp then listen
  */
 export async function startServer(port = 3001): Promise<void> {
-  await coworkApp.init()
+	await coworkApp.init();
 
-  // Create the registry and start serving IMMEDIATELY so the UI can load
-  // conversations without waiting. MCP servers (bunx) can take seconds to
-  // download/spawn on first run — connect them in the BACKGROUND and register
-  // their tools into the same registry object once ready.
-  const toolRegistry = createDefaultRegistry()
-  const app = createServer(toolRegistry)
+	// Create the registry and start serving IMMEDIATELY so the UI can load
+	// conversations without waiting. MCP servers (bunx) can take seconds to
+	// download/spawn on first run — connect them in the BACKGROUND and register
+	// their tools into the same registry object once ready.
+	const toolRegistry = createDefaultRegistry();
+	const app = createServer(toolRegistry);
 
-  console.log(`Server listening on http://0.0.0.0:${port}`)
+	// Bind to localhost ONLY: the backend can spawn agentic CLIs (claude/codex)
+	// that execute actions, so it must never be reachable from the LAN/Tailscale.
+	console.log(`Server listening on http://127.0.0.1:${port}`);
 
-  Bun.serve({
-    hostname: '0.0.0.0',
-    port,
-    fetch: app.fetch,
-    idleTimeout: 120, // 2 minutes for SSE streams
-  })
+	Bun.serve({
+		hostname: "127.0.0.1",
+		port,
+		fetch: app.fetch,
+		idleTimeout: 120, // 2 minutes for SSE streams
+	});
 
-  // Non-blocking: connect MCP servers after the server is already accepting
-  // requests. Tools added here become available to later agent calls.
-  connectMcpServers(toolRegistry)
-    .then((mcpToolCount) => {
-      if (mcpToolCount > 0) {
-        console.log(`MCP bridge: ${mcpToolCount} external tools registered`)
-      }
-    })
-    .catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.warn(`MCP bridge init failed (non-fatal): ${msg}`)
-    })
+	// Non-blocking: connect MCP servers after the server is already accepting
+	// requests. Tools added here become available to later agent calls.
+	connectMcpServers(toolRegistry)
+		.then((mcpToolCount) => {
+			if (mcpToolCount > 0) {
+				console.log(`MCP bridge: ${mcpToolCount} external tools registered`);
+			}
+		})
+		.catch((err: unknown) => {
+			const msg = err instanceof Error ? err.message : String(err);
+			console.warn(`MCP bridge init failed (non-fatal): ${msg}`);
+		});
 }
 
 // Run if executed directly
 if (import.meta.main) {
-  startServer()
+	startServer();
 }

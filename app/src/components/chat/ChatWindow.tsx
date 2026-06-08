@@ -81,7 +81,7 @@ export function ChatWindow() {
       try {
         let fullContent = ''
 
-        for await (const event of streamChat(text, { useTools: agentMode })) {
+        for await (const event of streamChat(text, { useTools: agentMode, model: activeModel.id })) {
           switch (event.type) {
             case 'text':
               fullContent += event.content

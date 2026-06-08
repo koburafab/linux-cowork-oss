@@ -42,6 +42,28 @@ fn find_bun() -> String {
     "bun".to_string()
 }
 
+/// Locate the standalone compiled backend binary embedded in the package.
+/// Returns None in dev (then we fall back to `bun run server.ts`).
+fn find_backend_binary() -> Option<String> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let cand = dir.join("cowork-backend");
+            if cand.exists() {
+                return Some(cand.to_string_lossy().into_owned());
+            }
+        }
+    }
+    for p in [
+        "/usr/lib/linux-cowork/cowork-backend",
+        "/usr/bin/cowork-backend",
+    ] {
+        if std::path::Path::new(p).exists() {
+            return Some(p.to_string());
+        }
+    }
+    None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Intel/Wayland + WebKitGTK renders a black screen with the DMABUF renderer.
@@ -66,23 +88,32 @@ pub fn run() {
                     .build(),
             )?;
 
-            // Find and spawn the Bun backend sidecar
-            if let Some(script_path) = find_server_script() {
+            // Start the backend. Prefer the embedded standalone binary (so the app
+            // is self-contained on any machine); fall back to `bun run server.ts` in dev.
+            let home = std::env::var("HOME").unwrap_or_default();
+            // Desktop launchers strip ~/.local/bin and ~/.bun/bin from PATH; re-add them
+            // so the backend can spawn the claude/codex CLIs.
+            let path_env = format!(
+                "{}/.local/bin:{}/.bun/bin:{}",
+                home,
+                home,
+                std::env::var("PATH").unwrap_or_default()
+            );
+
+            let child = if let Some(backend_bin) = find_backend_binary() {
+                log::info!("Starting embedded backend: {}", backend_bin);
+                Command::new(&backend_bin)
+                    .env("PATH", &path_env)
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+            } else if let Some(script_path) = find_server_script() {
                 let bun_path = find_bun();
-                // Run the backend from the app/ dir so its relative paths (SQLite
-                // DB, node_modules) resolve regardless of the app's launch CWD.
                 let work_dir = std::path::Path::new(&script_path)
                     .ancestors()
                     .nth(3)
                     .map(|p| p.to_path_buf());
-                // Desktop launchers strip ~/.bun/bin from PATH; re-add it.
-                let home = std::env::var("HOME").unwrap_or_default();
-                let path_env = format!(
-                    "{}/.bun/bin:{}",
-                    home,
-                    std::env::var("PATH").unwrap_or_default()
-                );
-                log::info!("Starting backend: {} run {} (cwd={:?})", bun_path, script_path, work_dir);
+                log::info!("Starting dev backend: {} run {} (cwd={:?})", bun_path, script_path, work_dir);
                 let mut cmd = Command::new(&bun_path);
                 cmd.arg("run")
                     .arg(&script_path)
@@ -92,19 +123,20 @@ pub fn run() {
                 if let Some(ref dir) = work_dir {
                     cmd.current_dir(dir);
                 }
-                let child = cmd.spawn();
-
-                match child {
-                    Ok(c) => {
-                        log::info!("Backend sidecar started (PID: {})", c.id());
-                        *BACKEND.lock().unwrap() = Some(c);
-                    }
-                    Err(e) => {
-                        log::error!("Failed to start backend sidecar: {}", e);
-                    }
-                }
+                cmd.spawn()
             } else {
-                log::warn!("Backend server.ts not found — start it manually: bun run src/backend/server.ts");
+                log::warn!("No backend found (neither embedded binary nor server.ts)");
+                Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no backend"))
+            };
+
+            match child {
+                Ok(c) => {
+                    log::info!("Backend started (PID: {})", c.id());
+                    *BACKEND.lock().unwrap() = Some(c);
+                }
+                Err(e) => {
+                    log::error!("Failed to start backend: {}", e);
+                }
             }
 
             Ok(())

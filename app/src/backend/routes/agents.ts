@@ -5,8 +5,31 @@
 import { Hono } from 'hono'
 import { agentOrchestrator } from '../../core/agent/orchestrator'
 import type { AgentConfig } from '../../core/agent/orchestrator'
+import { DEFAULT_MODELS } from '../../core/models/types'
+import type { ModelConfig } from '../../core/models/types'
+import { loadSettings } from '../../core/settings'
 
 export type AgentStatus = 'running' | 'done' | 'failed'
+
+/** Resolve a model id to a full ModelConfig with the right API key (same logic as chat). */
+function resolveAgentModel(modelId?: string): ModelConfig {
+  const settings = loadSettings()
+  const config: ModelConfig =
+    DEFAULT_MODELS.find((m) => m.id === (modelId || settings.activeModel)) || DEFAULT_MODELS[0]
+  const keys = settings.apiKeys || {}
+  if (config.provider === 'anthropic') {
+    config.apiKey = keys.anthropic || settings.anthropicApiKey || ''
+  } else if (config.baseUrl?.includes('deepseek.com')) {
+    config.apiKey = keys.deepseek || ''
+  } else if (config.baseUrl?.includes('moonshot.ai') || config.baseUrl?.includes('moonshot.cn')) {
+    config.apiKey = keys.moonshot || ''
+  } else if (config.baseUrl?.includes('openrouter.ai')) {
+    config.apiKey = keys.openrouter || ''
+  } else if (config.baseUrl?.includes('openai.com')) {
+    config.apiKey = keys.openai || ''
+  }
+  return config
+}
 
 interface AgentEntry {
   id: string
@@ -43,12 +66,7 @@ export function createAgentRoutes(): Hono {
 
     const config: AgentConfig = {
       name: body.name,
-      model: {
-        id: body.model || 'default',
-        name: body.model || 'default',
-        provider: 'anthropic',
-        model: body.model || 'default',
-      },
+      model: resolveAgentModel(body.model),
       systemPrompt: body.systemPrompt || `You are ${body.name}, an AI agent.`,
     }
 

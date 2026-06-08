@@ -34,11 +34,14 @@ export async function transcribeVoice(seconds = 5): Promise<string> {
 /**
  * Stream chat via SSE — POST to /api/chat, yields parsed events
  */
-export async function* streamChat(message: string, options?: { useTools?: boolean }): AsyncGenerator<SSEEvent> {
+export async function* streamChat(
+  message: string,
+  options?: { useTools?: boolean; model?: string },
+): AsyncGenerator<SSEEvent> {
   const res = await fetch(`${BACKEND_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, useTools: options?.useTools }),
+    body: JSON.stringify({ message, useTools: options?.useTools, model: options?.model }),
   })
 
   if (!res.ok) {
