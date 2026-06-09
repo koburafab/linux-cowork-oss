@@ -243,6 +243,43 @@ export function createDefaultRegistry(): ToolRegistry {
 
   registry.register({
     definition: {
+      name: 'read_spreadsheet',
+      description:
+        'Read a spreadsheet (.xlsx, .ods, .xls, .csv) and return its content as CSV text. ' +
+        'TOUJOURS utiliser cet outil pour lire un tableur Excel/LibreOffice Calc — ' +
+        'ne JAMAIS faire de capture d\'écran pour lire un tableur.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Chemin absolu du fichier tableur' },
+          sheet: { type: 'string', description: 'Nom de la feuille (défaut: la première)' },
+          maxRows: { type: 'number', description: 'Nombre max de lignes à retourner (défaut 200)' },
+        },
+        required: ['path'],
+      },
+    },
+    executor: async (input) => {
+      const XLSX = await import('xlsx')
+      const wb = XLSX.readFile(input.path as string)
+      const sheetName = (input.sheet as string) || wb.SheetNames[0]
+      const ws = wb.Sheets[sheetName]
+      if (!ws) {
+        return `Feuille "${sheetName}" introuvable. Feuilles dispo : ${wb.SheetNames.join(', ')}`
+      }
+      const csv = XLSX.utils.sheet_to_csv(ws)
+      const maxRows = (input.maxRows as number) || 200
+      const lines = csv.split('\n')
+      const head = lines.slice(0, maxRows).join('\n')
+      const more =
+        lines.length > maxRows
+          ? `\n… (${lines.length - maxRows} lignes de plus). Feuilles : ${wb.SheetNames.join(', ')}`
+          : `\nFeuilles : ${wb.SheetNames.join(', ')}`
+      return head + more
+    },
+  })
+
+  registry.register({
+    definition: {
       name: 'list_directory',
       description: 'List the contents of a directory.',
       input_schema: {
@@ -805,6 +842,9 @@ async function openAITranscribe(wavPath: string, key: string): Promise<string> {
   const form = new FormData()
   form.append('file', new Blob([buf], { type: 'audio/wav' }), 'audio.wav')
   form.append('model', 'gpt-4o-transcribe')
+  // Forcer le français (sinon auto-détection parfois fausse / mélange de langues)
+  form.append('language', 'fr')
+  form.append('prompt', 'Transcription en français.')
   const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}` },

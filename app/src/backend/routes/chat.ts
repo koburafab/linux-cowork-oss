@@ -163,6 +163,26 @@ export function createChatRoutes(toolRegistry: ToolRegistry): Hono {
 			modelConfig.agent = !!body.useTools;
 		}
 
+		// Routage vision : si le modèle actif ne voit pas les images (ex: DeepSeek),
+		// on délègue l'analyse des screenshots à OpenAI (seul le texte revient au modèle).
+		const visionSettings = loadSettings();
+		const openaiKey = visionSettings.apiKeys?.openai || "";
+		const activeHasVision =
+			modelConfig.provider === "anthropic" ||
+			!!modelConfig.baseUrl?.includes("openai.com") ||
+			!!modelConfig.baseUrl?.includes("moonshot");
+		const visionConfig: ModelConfig | undefined = openaiKey
+			? {
+					id: "openai-vision",
+					name: "OpenAI Vision",
+					provider: "openai-compatible",
+					model: "gpt-5.4-mini",
+					baseUrl: "https://api.openai.com",
+					apiKey: openaiKey,
+					maxTokens: 1024,
+				}
+			: undefined;
+
 		// If useTools explicitly requested (and not a CLI provider), use the tool loop
 		if (body.useTools && !isCli) {
 			return sseStream(async function* () {
@@ -172,7 +192,7 @@ export function createChatRoutes(toolRegistry: ToolRegistry): Hono {
 					history,
 					modelConfig,
 					toolRegistry,
-					{ systemPrompt },
+					{ systemPrompt, activeHasVision, visionConfig },
 				)) {
 					if (event.type === "text" && event.content) {
 						fullAssistantText += event.content;

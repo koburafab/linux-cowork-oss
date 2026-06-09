@@ -15,6 +15,7 @@ import type {
 } from '../core/models/types'
 import type { ToolRegistry } from './tool-registry'
 import { notify } from '../core/notifications'
+import { analyzeScreenshot } from '../core/computer-use/vision'
 
 export interface SSEEvent {
   type: 'text' | 'tool_call' | 'tool_result' | 'screenshot' | 'done' | 'error'
@@ -29,6 +30,10 @@ export interface ToolLoopOptions {
   maxIterations?: number
   timeoutMs?: number
   systemPrompt?: string
+  /** true if the ACTIVE model can natively see images (Claude, GPT, Kimi). DeepSeek = false. */
+  activeHasVision?: boolean
+  /** Vision model (OpenAI) used to describe screenshots when the active model is text-only. */
+  visionConfig?: ModelConfig
 }
 
 /**
@@ -41,7 +46,9 @@ const DEFAULT_SYSTEM_PROMPT =
   // --- STABLE SECTION (cacheable prefix) ---
   'You are a helpful AI assistant on a Linux desktop with access to tools. ' +
   'Use the right tool for the job: web_search to find current/real-time info and web_fetch to read a page, ' +
-  'bash for commands, read_file/write_file for files, system_info for system details. ' +
+  'bash for commands, read_file/write_file for text files, ' +
+  'read_spreadsheet to read ANY spreadsheet (.xlsx/.ods/.xls/.csv) — NEVER take a screenshot to read a spreadsheet, ' +
+  'system_info for system details. ' +
   'For anything time-sensitive or factual you are unsure of (news, weather, prices, versions), use web_search instead of saying you have no internet access. ' +
   'Only use screenshot and mouse/keyboard tools when the user explicitly asks you to interact with the GUI. ' +
   'You HAVE persistent memory via save_memory and recall_memories tools. ' +
@@ -67,6 +74,10 @@ export async function* toolUseLoop(
   const router = options?.router ?? modelRouter
   const startTime = Date.now()
   const isAnthropic = isAnthropicProvider(modelConfig)
+  // Le modèle actif voit-il les images ? (Claude oui, GPT/Kimi oui, DeepSeek NON)
+  const activeHasVision = options?.activeHasVision ?? isAnthropic
+  // Modèle de vision OpenAI pour décrire les screenshots quand l'actif est text-only.
+  const visionConfig = options?.visionConfig
 
   const tools = toolRegistry.getDefinitions()
 
@@ -180,29 +191,78 @@ export async function* toolUseLoop(
 
         yield { type: 'tool_result', name: call.toolName, result }
 
-        // For screenshot results with images, inject the image directly
-        // so vision models (Kimi K2.5, Claude) can actually see it
+        // Gestion des screenshots : on n'injecte JAMAIS le base64 brut à un modèle
+        // text-only (ex: DeepSeek) — sinon le base64 explose le contexte ("max token").
         if (call.toolName === 'screenshot' && Array.isArray(result)) {
           const imgBlock = result.find(
             (b): b is ContentBlock & { type: 'image' } => b.type === 'image',
           )
-          if (imgBlock && imgBlock.type === 'image' && !isAnthropic) {
-            // OpenAI vision format: add image as user message
-            messages.push({
-              role: 'tool',
-              content: 'Screenshot captured. See image below.',
-              tool_call_id: call.toolUseId,
-              timestamp: Date.now(),
-            })
-            messages.push({
-              role: 'user',
-              content: JSON.stringify([
-                { type: 'text', text: 'Here is the screenshot. Describe what you see and decide what to do next.' },
-                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imgBlock.source.data}` } },
-              ]),
-              timestamp: Date.now(),
-            })
-            continue // skip normal appendToolResult
+          if (imgBlock && imgBlock.type === 'image') {
+            const b64 = imgBlock.source.data
+
+            // 1) Le modèle actif voit les images (GPT/Kimi) -> injection inline
+            if (activeHasVision && !isAnthropic) {
+              messages.push({
+                role: 'tool',
+                content: 'Screenshot captured. See image below.',
+                tool_call_id: call.toolUseId,
+                timestamp: Date.now(),
+              })
+              messages.push({
+                role: 'user',
+                content: JSON.stringify([
+                  { type: 'text', text: 'Here is the screenshot. Describe what you see and decide what to do next.' },
+                  { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } },
+                ]),
+                timestamp: Date.now(),
+              })
+              continue
+            }
+
+            // 2) Modèle text-only (DeepSeek) + clé OpenAI -> OpenAI décrit l'image,
+            //    et SEUL LE TEXTE revient au modèle. Plus de base64 dans le contexte.
+            if (!activeHasVision && visionConfig) {
+              try {
+                const desc = await analyzeScreenshot(
+                  b64,
+                  'Décris cet écran en détail : texte visible, éléments d\'UI, boutons, champs et leurs positions.',
+                  visionConfig,
+                )
+                appendToolResult(messages, call, `[Capture d'écran analysée par la vision OpenAI]\n${desc}`, isAnthropic)
+              } catch (e) {
+                const m = e instanceof Error ? e.message : String(e)
+                appendToolResult(messages, call, `[Capture d'écran prise mais l'analyse vision OpenAI a échoué : ${m}]`, isAnthropic)
+              }
+              continue
+            }
+
+            // 3) Claude (vision native via bloc image dans le tool_result)
+            if (isAnthropic) {
+              messages.push({
+                role: 'user',
+                content: JSON.stringify([
+                  {
+                    type: 'tool_result',
+                    tool_use_id: call.toolUseId,
+                    content: [
+                      { type: 'text', text: 'Screenshot:' },
+                      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+                    ],
+                  },
+                ]),
+                timestamp: Date.now(),
+              })
+              continue
+            }
+
+            // 4) Text-only sans clé OpenAI : on NE balance PAS le base64 (overflow).
+            appendToolResult(
+              messages,
+              call,
+              "[Capture d'écran prise, mais le modèle actif ne voit pas les images et aucune clé OpenAI n'est configurée pour l'analyser.]",
+              isAnthropic,
+            )
+            continue
           }
         }
 
